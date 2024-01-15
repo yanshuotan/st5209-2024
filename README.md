@@ -57,5 +57,6 @@ Students are expected to have viewed and understood the lecture video before com
 - Familiarity with R and Python programming
 
 ## References
+- Class notes/textbook: https://yanshuo.quarto.pub/nus-ts-book
 - Hyndman, R.J., & Athanasopoulos, G. (2021) Forecasting: principles and practice, 3rd edition, OTexts: Melbourne, Australia. OTexts.com/fpp3
 - Shumway, R. H., & Stoffer, D. S. (2017). Time Series Analysis and Its Applications (4th ed.). Springer.
