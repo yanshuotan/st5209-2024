@@ -1,0 +1,11 @@
+1. Google Stock information
+filename: GOOG.csv
+summary: stock price and volume over 5 year period ending 1 Jan 2024.
+source: https://finance.yahoo.com/quote/GOOG/, 
+
+#
+
+2. ECG data
+filename: ecg.csv
+source: https://www.timeseriesclassification.com/description.php?Dataset=ECG5000
+post process: save ECG5000_TRAIN.txt as ecg.csv
