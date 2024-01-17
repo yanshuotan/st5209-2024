@@ -52,6 +52,12 @@ Students are expected to have viewed and understood the lecture video before com
 - Midterm Exam: 25%
 - Final Exam: 35%
 
+## Assignment Policy
+- There will be weekly assignments
+- Assignments are due 23.59 on Mondays after they are uploaded
+- No late sumbmissions will be accepted
+- The two lowest scoring assignments will be dropped
+
 ## Prerequisites
 - Basic knowledge of statistics, probability, and linear algebra
 - Familiarity with R and Python programming
