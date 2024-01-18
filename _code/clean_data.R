@@ -1,8 +1,8 @@
 require(tidyverse)
 require(fpp3)
 
-RAW_DIR <- "_data/raw/"
-CLEANED_DIR <- "_data/cleaned/"
+RAW_DIR <- "../_data/raw/"
+CLEANED_DIR <- "../_data/cleaned/"
 
 process_sgcpi <- function(save = FALSE) {
   # Return cleaned dataset for SG CPI data.
@@ -12,7 +12,7 @@ process_sgcpi <- function(save = FALSE) {
   sgcpi <- sgcpi |> 
     select(-`Data Series`) |>
     t() |>
-    as_tibble(cols())
+    as_tibble()
   colnames(sgcpi) <- col_names
   selected_cols <- c("All Items", "Food", "Clothing & Footwear", "Health Care", 
   "Transport", "Education")
