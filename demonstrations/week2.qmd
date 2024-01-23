@@ -1,0 +1,124 @@
+---
+title: "Week 2 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+We always load the following packages.
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+```
+
+## Lags and differencing
+
+Let's consider the `aus_arrivals` dataset and try to plot lagged arrival values.
+
+```{r}
+aus_arrivals |>
+  mutate(LaggedArrivals = lag(Arrivals)) |>
+  autoplot(LaggedArrivals)
+```
+
+Something seems a bit odd about this plot, especially the UK value.
+What is happening is that the lag function has treated the entire column as a 
+single time series even though it contains 4 separate time series.
+To avoid this, we need to do a `group_by()` before applying mutate
+
+```{r}
+aus_arrivals |>
+  group_by(Origin) |>
+  mutate(LaggedArrivals = lag(Arrivals)) |>
+  ungroup() |>
+  autoplot(LaggedArrivals)
+```
+
+## Moving averages
+
+Let's focus on the arrivals from Japan time series and compute moving averages.
+
+```{r}
+library(slider)
+
+aus_jap_arrivals <- aus_arrivals |> 
+  filter(Origin == "Japan") |>
+  mutate(MA2 = slide_dbl(Arrivals, mean, .before = 1, .after = 0),
+         MA2_alt = (Arrivals + lag(Arrivals)) / 2)
+aus_jap_arrivals
+```
+
+Manually computing the moving average shows that the formula is correct.
+We now compute moving averages with a few different window sizes to see the 
+effect of varying the window size.
+
+```{r}
+library(slider)
+library(viridis)
+
+aus_jap_arrivals <- aus_arrivals |> 
+  filter(Origin == "Japan") |>
+  mutate(MA2 = slide_dbl(Arrivals, mean, .before = 1, .after = 0),
+         MA4 = slide_dbl(Arrivals, mean, .before = 2, .after = 1),
+         MA6 = slide_dbl(Arrivals, mean, .before = 3, .after = 2),
+         MA8 = slide_dbl(Arrivals, mean, .before = 4, .after = 3))
+```
+
+We can plot them individually, or plot all versions on the same plot.
+
+```{r}
+aus_jap_arrivals |> select(-Origin) |>
+  pivot_longer(cols = contains("MA") | matches("Arrivals"), names_to = "Type") |>
+  autoplot(value) + scale_color_viridis(discrete = TRUE)
+```
+
+There's a bit of overplotting here, but we generally see that the time series 
+becomes smoother as we increase the window size.
+On the other hand, MA4 seems to be smoother than MA6. This is because the seasonality
+has period 4, which is totally 
+
+```{r}
+aus_jap_arrivals |> select(-Origin) |>
+  pivot_longer(cols = matches("MA4") | matches("MA6") | matches("Arrivals"), names_to = "Type") |>
+  autoplot(value) + scale_color_viridis(discrete = TRUE)
+```
+
+## Log transform and differencing
+
+Let's consider the turnover for clothes sales in Victoria, Australia.
+
+```{r}
+diabetes <- read_rds("../_data/cleaned/diabetes.rds")
+diabetes |> autoplot()
+```
+The seasonal fluctuations grow with the level of the time series, so we shall apply a log transformation.
+
+```{r}
+diabetes |> 
+  mutate(logTotalC = log(TotalC)) |>
+  autoplot(logTotalC)
+```
+
+This is much better now. Let us now take differences
+
+```{r}
+diabetes |> 
+  mutate(logTotalC = log(TotalC)) |>
+  mutate(logDiffTotalC = difference(logTotalC)) |>
+  autoplot(logDiffTotalC)
+```
+This measures the percentage month-on-month increase of diabetes drugs.
+
+What happens if we take a seasonal difference?
+
+```{r}
+diabetes |> 
+  mutate(logTotalC = log(TotalC)) |>
+  mutate(logSeasonalDiffTotalC = difference(logTotalC, 12)) |>
+  autoplot(logSeasonalDiffTotalC)
+```
+
+## 
