@@ -24,9 +24,9 @@ aus_arrivals |>
   autoplot(LaggedArrivals)
 ```
 
-Something seems a bit odd about this plot, especially the UK value.
+Something seems a bit odd about this plot, especially the UK value. 
 What is happening is that the lag function has treated the entire column as a 
-single time series even though it contains 4 separate time series.
+single time series even though it contains 4 separate time series. 
 To avoid this, we need to do a `group_by()` before applying mutate
 
 ```{r}
@@ -51,7 +51,7 @@ aus_jap_arrivals <- aus_arrivals |>
 aus_jap_arrivals
 ```
 
-Manually computing the moving average shows that the formula is correct.
+Manually computing the moving average shows that the formula is correct. 
 We now compute moving averages with a few different window sizes to see the 
 effect of varying the window size.
 
@@ -61,29 +61,31 @@ library(viridis)
 
 aus_jap_arrivals <- aus_arrivals |> 
   filter(Origin == "Japan") |>
-  mutate(MA2 = slide_dbl(Arrivals, mean, .before = 1, .after = 0),
-         MA4 = slide_dbl(Arrivals, mean, .before = 2, .after = 1),
-         MA6 = slide_dbl(Arrivals, mean, .before = 3, .after = 2),
-         MA8 = slide_dbl(Arrivals, mean, .before = 4, .after = 3))
+  mutate(ArrivalsMA2 = slide_dbl(Arrivals, mean, .before = 1, .after = 0),
+         ArrivalsMA4 = slide_dbl(Arrivals, mean, .before = 2, .after = 1),
+         ArrivalsMA6 = slide_dbl(Arrivals, mean, .before = 3, .after = 2),
+         ArrivalsMA8 = slide_dbl(Arrivals, mean, .before = 4, .after = 3))
 ```
 
 We can plot them individually, or plot all versions on the same plot.
 
 ```{r}
 aus_jap_arrivals |> select(-Origin) |>
-  pivot_longer(cols = contains("MA") | matches("Arrivals"), names_to = "Type") |>
+  pivot_longer(cols = contains("Arrivals"), names_to = "Type") |>
   autoplot(value) + scale_color_viridis(discrete = TRUE)
 ```
 
 There's a bit of overplotting here, but we generally see that the time series 
-becomes smoother as we increase the window size.
-This is similar to bandwidth selection for kernel smoothing.
-On the other hand, MA4 seems to be smoother than MA6. 
-This is because the seasonality has period 4, which is averaged out by the 
+becomes smoother as we increase the window size. 
+This is similar to bandwidth selection for kernel smoothing. 
+On the other hand, MA4 seems to be smoother than MA6 (see the figure below). 
+This is because the seasonality has period 4, which is averaged out when the
+window size of the moving average is a multiple of 4, but not otherwise.
 
 ```{r}
 aus_jap_arrivals |> select(-Origin) |>
-  pivot_longer(cols = matches("MA4") | matches("MA6") | matches("Arrivals"), names_to = "Type") |>
+  pivot_longer(cols = all_of(c("Arrivals", "ArrivalsMA4", "ArrivalsMA6")), 
+               names_to = "Type") |>
   autoplot(value) + scale_color_viridis(discrete = TRUE)
 ```
 
@@ -95,7 +97,9 @@ Let's consider the turnover for clothes sales in Victoria, Australia.
 diabetes <- read_rds("../_data/cleaned/diabetes.rds")
 diabetes |> autoplot()
 ```
-The seasonal fluctuations grow with the level of the time series, so we shall apply a log transformation.
+
+The seasonal fluctuations grow with the level of the time series, so we shall 
+apply a log transformation.
 
 ```{r}
 diabetes |> 
@@ -111,7 +115,8 @@ diabetes |>
   mutate(logDiffTotalC = difference(logTotalC)) |>
   autoplot(logDiffTotalC)
 ```
-This measures the percentage month-on-month increase in sales of diabetes drugs.
+
+This measures the percentage *month-on-month* increase in sales of diabetes drugs. 
 The time series still seems to be quite seasonal.
 
 What happens if we take a seasonal difference?
@@ -123,21 +128,6 @@ diabetes |>
   autoplot(logSeasonalDiffTotalC)
 ```
 
-It measures the year-on-year percentage increase in sales of diabetes drugs. 
-The seasonality has disappeared!
-This series is also much more stable, see the y-axis limits.
-
-## Putting everything together
-
-```{r}
-global_economy |> 
-  mutate(gdp_pc = GDP / Population) |> 
-  mutate(log_gdp_pc = log(gdp_pc)) |> 
-  mutate(log_diff_gdp_pc = difference(log_gdp_pc))|> 
-  group_by(Country) |>
-  mutate(log_diff_gdp_pc_sd = slide_dbl(log_diff_gdp_pc, sd, .before = 5, .after = 5)) |>
-  ungroup() |>
-  filter(Year > 1970) |>
-  arrange(desc(log_diff_gdp_pc_sd))
-
-```
+It measures the *year-on-year* percentage increase in sales of diabetes drugs. 
+The seasonality has disappeared! This series is also much more stable, see the 
+y-axis limits.
