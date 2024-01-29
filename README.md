@@ -53,10 +53,16 @@ Students are expected to have viewed and understood the lecture video before com
 - Final Exam: 35%
 
 ## Assignment Policy
-- There will be weekly assignments
-- Assignments are due 23.59 on Mondays after they are uploaded
+- There will be assignments due once every two weeks
+- Assignments are due 23.59 on Mondays two weeks after they are uploaded
 - No late sumbmissions will be accepted
-- The two lowest scoring assignments will be dropped
+- The lowest scoring assignment will be dropped
+
+## Midterm Exam
+- The midterm exam will be take home and open book. It will be released at noon on 8 March 2024 (Friday) and due at noon on 15 March 2024 (Friday). 
+
+## Final Exam
+- The final exam will take place on 30 April 2024, 5-7pm. It will be closed book, but you are allowed one doubled-sided A4-sized help sheet.
 
 ## Prerequisites
 - Basic knowledge of statistics, probability, and linear algebra
