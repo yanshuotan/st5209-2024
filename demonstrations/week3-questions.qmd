@@ -15,8 +15,7 @@ library(slider)
 
 ## Computing classical decomposition
 
-Compute a classical decomposition for the following time series without using the 
-`classical_decomposition()` function.
+Compute a classical decomposition for the following time series without using the `classical_decomposition()` function.
 
 ```{r}
 aus_arrivals_jap <- aus_arrivals |>
@@ -26,9 +25,7 @@ aus_arrivals_jap <- aus_arrivals |>
 
 ## Classical vs STL decomposition
 
-Start with the following code snippet creating a time series of passengers 
-flying on Ansett Airlines. Perform classical and STL decompositions and comment
-on their differences. Which do you trust more?
+Start with the following code snippet creating a time series of passengers flying on Ansett Airlines. Perform classical and STL decompositions and comment on their differences. Which do you trust more?
 
 ```{r}
 melsyd_economy <- ansett |>
@@ -40,21 +37,17 @@ autoplot(melsyd_economy, Passengers) +
 
 ## White noise and ACF plots
 
-Create a time series of length 200 comprising i.i.d. standard Gaussian measurements.
-Make a time plot of the time series as well as an ACF plot.
-Compare this with the remainder term from an STL decomposition of `aus_arrivals_jap`.
-What do you observe?
+Create a time series of length 200 comprising i.i.d. standard Gaussian measurements. Make a time plot of the time series as well as an ACF plot. Compare this with the remainder term from an STL decomposition of `aus_arrivals_jap`. What do you observe?
 
 ## Summary statistics
 
-Glance through the summary statistics described in [Chapter 4.4](https://otexts.com/fpp3/other-features.html) of Hyndman and Athanasopoulos (2021).
-What do the following summary statistics compute?
+Glance through the summary statistics described in [Chapter 4.4](https://otexts.com/fpp3/other-features.html) of Hyndman and Athanasopoulos (2021). What do the following summary statistics compute?
 
-- Strength of trend
-- Strength of seasonality
-- `shift_level_max`
-- `shift_level_index`
-- `var_tiled_var`
+-   Strength of trend
+-   Strength of seasonality
+-   `shift_level_max`
+-   `shift_level_index`
+-   `var_tiled_var`
 
 When would they be useful?
 
@@ -68,11 +61,9 @@ tourism_features <- tourism |>
   features(Trips, feature_set(pkgs = "feasts"))
 ```
 
-Make a scatter plot of seasonal strength against trend strength and color the points according to `Purpose`.
-What can you tell from the plot?
+Make a scatter plot of seasonal strength against trend strength and color the points according to `Purpose`. What can you tell from the plot?
 
-Perform PCA on the `tourism_features` dataframe and make a scatter plot of the first two PCs.
-What do you observe?
+Perform PCA on the `tourism_features` dataframe and make a scatter plot of the first two PCs. What do you observe?
 
 ## Time series clustering using summary statistics
 

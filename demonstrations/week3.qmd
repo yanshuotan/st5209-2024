@@ -1,0 +1,345 @@
+---
+title: "Week 3 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+library(broom)
+```
+
+## Computing classical decomposition
+
+*Compute a classical decomposition for the following time series without using 
+the `classical_decomposition()` function.*
+
+```{r}
+aus_arrivals_jap <- aus_arrivals |>
+  filter(Origin == "Japan") |>
+  select(Quarter, Arrivals)
+```
+
+<hr>
+
+We first create a trend and detrended columns.
+
+```{r}
+detrended <- aus_arrivals_jap |> 
+  mutate(ArrivalsTrend = slide_dbl(Arrivals, mean, .before = 4, .after = 3),
+         ArrivalsDetrended = Arrivals - ArrivalsTrend)
+```
+
+Add dummies for the quarters.
+
+```{r}
+temp <- detrended |>
+  mutate(Q1 = quarter(Quarter) == 1,
+         Q2 = quarter(Quarter) == 2, 
+         Q3 = quarter(Quarter) == 3)
+```
+
+Compute seasonal and remainder components.
+
+```{r}
+hard_decomp <- detrended |> 
+  mutate(ArrivalsSeasonal = lm(ArrivalsDetrended ~ Q1 + Q2 + Q3, temp)$fitted,
+         ArrivalsRemainder = ArrivalsDetrended - ArrivalsSeasonal)
+```
+
+Let us now run the automatic classical decomposition.
+
+```{r}
+auto_decomp <- aus_arrivals_jap |>
+  model(classical_decomposition(Arrivals)) |>
+  components()
+```
+
+Comparing the two...
+
+```{r}
+plt1 <- hard_decomp |>
+  ggplot(aes(x = Quarter, y = ArrivalsTrend)) + 
+  geom_line() +
+  geom_line(data = auto_decomp, 
+            mapping = aes(y = trend), color = "blue")
+
+plt2 <- hard_decomp |>
+  ggplot(aes(x = Quarter, y = ArrivalsSeasonal)) + 
+  geom_line() +
+  geom_line(data = auto_decomp, 
+            mapping = aes(y = seasonal), color = "blue")
+
+plt3 <- hard_decomp |>
+  ggplot(aes(x = Quarter, y = ArrivalsRemainder)) + 
+  geom_line() +
+  geom_line(data = auto_decomp, 
+            mapping = aes(y = random), color = "blue")
+
+grid.arrange(plt1, plt2, plt3, nrow = 3)
+```
+
+Quite similar. Some minor differences probably because of different window size 
+for trend.
+
+## Classical vs STL decomposition
+
+*Start with the following code snippet creating a time series of passengers *
+*flying on Ansett Airlines. Perform classical and STL decompositions and comment *
+*on their differences. Which do you trust more?*
+
+```{r}
+melsyd_economy <- ansett |>
+  filter(Airports == "MEL-SYD", Class == "Economy") |>
+  mutate(Passengers = Passengers/1000)
+autoplot(melsyd_economy, Passengers) +
+  labs(y = "Passengers ('000)")
+```
+
+<hr>
+
+If we try to compute a decomposition directly, we get an error saying that there 
+are missing values. Let's first find the missing value and then fill it.
+
+```{r}
+melsyd_economy |>
+  scan_gaps()
+# Missing entry is 1987 W38
+```
+
+```{r}
+melsyd_economy |>
+  filter_index("1987 W35" ~ "1987 W40")
+```
+
+Considering the nearby values, it seems reasonable to impute the mean of the preceding and succeeding weeks.
+
+```{r}
+melsyd_economy <- melsyd_economy |>
+  fill_gaps(Passengers = (21.9 + 23.8) / 2)
+```
+
+We now perform classical and STL decompositions.
+
+```{r}
+plt1 <- melsyd_economy |>
+  model(classical_decomposition(Passengers)) |>
+  components() |>
+  autoplot()
+
+plt2 <- melsyd_economy |>
+  model(STL(Passengers, robust = TRUE)) |>
+  components() |>
+  autoplot()
+
+grid.arrange(plt1, plt2, nrow = 2)
+```
+Here, we see that for classical decomposition, the zero passenger numbers between 
+W34 and W40 in 1989 have caused a sharp downward shift over W34 to W40 in the 
+seasonal component and also a significant dip in the trend component.
+This is undesirable because we know that these numbers are outliers---they are
+the result of an event that will not be repeated again (or at least that cannot
+be forecasted the available data).
+In comparison, the STL decomposition, after setting the option `robust = TRUE`,
+is able to put this portion of the time series entirely into the remainder
+component.
+
+Furthermore, note that the classical decomposition is not able to estimate the
+trend component at the very start and end of the time series, while STL is
+able to do so.
+
+## White noise and ACF plots
+
+*Create a time series of length 200 comprising i.i.d. standard Gaussian measurements.*
+*Make a time plot of the time series as well as an ACF plot.*
+*Compare this with the remainder term from an STL decomposition of `aus_arrivals_jap`.*
+*What do you observe?*
+
+<hr>
+
+```{r}
+set.seed(42)
+
+white_noise <- 
+  tsibble(
+    x = 1:200,
+    y = rnorm(200),
+    index = x
+  )
+
+white_noise |> autoplot()
+white_noise |> ACF() |> autoplot()
+```
+
+The spikes of the ACF seem like random fluctations.
+They are also small in magnitude.
+Note that the blue horizontal lines are 95% confidence regions for the spikes if
+this were an ACF plot for a white noise time series.
+In other words, we should expect at most 5% of the spikes to exceed the blue lines,
+which is indeed the case here.
+
+Let us now consider the ACF plots for the remainder component for the STL
+decompositions of two time series.
+
+
+```{r}
+aus_arrivals |>
+  filter(Origin == "Japan") |>
+  model(STL(Arrivals ~ trend() + season())) |>
+  components() |>
+  ACF(remainder) |>
+  autoplot()
+```
+
+```{r}
+#| message: FALSE
+#| warning: FALSE
+#| fig-cap: Energy demand in Victoria, Australia in January and February 2013, measured half-hourly.
+#| label: fig-decomposition-elec
+
+vic_elec |>
+    filter(year(Time) == 2013, month(Time) %in% c(1,2)) |> 
+    model(
+        STL(Demand ~ trend() + 
+        season(period = 48 * 7) +
+        season(period = 48))) |>
+    components() |>
+  ACF(remainder) |>
+  autoplot()
+
+```
+
+These do not look like white noise.
+Indeed 
+
+## Summary statistics
+
+Glance through the summary statistics described in [Chapter 4.4](https://otexts.com/fpp3/other-features.html) of Hyndman and Athanasopoulos (2021). What do the following summary statistics compute?
+
+-   Strength of trend
+-   Strength of seasonality
+-   `shift_level_max`
+-   `shift_level_index`
+-   `var_tiled_var`
+
+When would they be useful?
+
+## EDA with summary statistics
+
+*The follow code snippet generates summary statistics for the various time series *
+*in the `tourism` dataset.*
+
+```{r}
+#| eval: FALSE
+tourism_features <- tourism |>
+  features(Trips, feature_set(pkgs = "feasts"))
+```
+
+*Make a scatter plot of seasonal strength against trend strength and color the *
+*points according to `Purpose`. What can you tell from the plot?*
+
+*Perform PCA on the `tourism_features` dataframe and make a scatter plot of the *
+*first two PCs. What do you observe?*
+
+<hr>
+
+```{r}
+# Takes awhile to run
+tourism_features <- tourism |>
+  features(Trips, feature_set(pkgs = "feasts"))
+tourism_features
+```
+
+```{r}
+tourism_features |>
+  ggplot(aes(x = trend_strength, 
+             y = seasonal_strength_year,
+             color = Purpose)) +
+  geom_point()
+```
+
+The description of the `tourism` dataset says that it counts the quarterly 
+overnight trips from 1998 Q1 to 2016 Q4 across Australia.
+There are about 304 such time series, one for every region in Australia and
+for one of 4 types of travel purposes.
+It seems that the time series of trips for holiday travel tend to be have
+high seasonal strength compared to other types of trips.
+It also seems that there almost all time series have have fairly strong
+trend and seasonal strength.
+
+We now perform PCA. [^1]
+
+[^1]: PCA is not part of the scope of this course. This is simply for illustrative purposes on what can be done as part of EDA with summary statistics.
+
+```{r}
+pcs <- tourism_features |>
+  select(-State, -Region, -Purpose) |>
+  prcomp(scale = TRUE) |>
+  augment(tourism_features)
+pcs |>
+  ggplot(aes(x = .fittedPC1, y = .fittedPC2, col = Purpose)) +
+  geom_point() +
+  theme(aspect.ratio = 1)
+```
+
+Here, we also see a separation between the time series for holiday travel and 
+other time series.
+We now inspect some of the outlier time series, i.e. those that have especially 
+large values for the first PC.
+
+```{r}
+pcs |> 
+  filter(.fittedPC1 > 10) |>
+  left_join(tourism) |>
+  as_tsibble(index = Quarter, key = c(Region, State, Purpose)) |>
+  ggplot(aes(x = Quarter, y = Trips)) + 
+  geom_line() + 
+  facet_wrap(~ Region)
+```
+
+## Time series EDA and classification using summary statistics
+
+*Use summary statistics to create a model for classifying the time series in this* *[dataset](https://kdd.ics.uci.edu/databases/synthetic_control/synthetic_control.html).*
+
+<hr>
+
+This will be explored more in the homework assignment.
+Here, we just display the code to wrangle the dataset.
+
+```{r}
+control_charts <- read_table("../_data/raw/synthetic_control.data", 
+                             col_names = FALSE)
+chart_type <- as.factor(rep(c("Normal", "Cyclic", "Increasing", "Decreasing", 
+                              "Upward", "Downward"), each = 100))
+control_charts <- control_charts |>
+  mutate(Type = chart_type,
+         key = 1:600) |>
+  pivot_longer(cols = contains("X"),
+               values_to = "value") |>
+  mutate(Time = rep(1:60, 600)) |>
+  select(Time, value, key, Type) |>
+  as_tsibble(index = Time,
+             key = c(key, Type))
+
+```
+Here's a preliminary scatter plot using the trend strength and spikiness summary
+statistics.
+We see that "normal" control charts have small trend strength whereas all other
+time series seem have larger trend.
+This is probably due to there not being any seasonal component in the STL
+decomposition.
+
+```{r}
+control_charts |> 
+  features(value, feat_stl) |>
+  ggplot(aes(x = trend_strength,
+             y = spikiness, 
+             color = Type)) +
+  geom_point()
+```
