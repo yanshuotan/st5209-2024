@@ -1,0 +1,78 @@
+---
+title: "Week 4 Demonstration"
+format: html
+editor: visual
+  markdown: 
+    wrap: 72
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+library(broom)
+```
+
+## 1. Simple forecasting strategies and statistical models
+
+### Mean method
+
+Show that the mean method is derived from the statistical model shown in the video, i.e. $$
+x_t = \theta + \epsilon_t
+$$ with $\epsilon_1,\epsilon_2,\ldots,\epsilon_n \sim_{i.i.d.} \mathcal{N}(0,\sigma^2)$.
+
+### Naive method
+
+Show that the naive method is derived from the statistical model shown in the video, i.e. $$
+x_t = x_{t-1} + \epsilon_t
+$$ with $\epsilon_1,\epsilon_2,\ldots,\epsilon_n \sim_{i.i.d.} \mathcal{N}(0,\sigma^2)$.
+
+### Seasonal naive method
+
+What is the statistical model associated with the seasonal naive method?
+
+### Linear trend method
+
+What is the statistical model for the linear trend method?
+
+### Drift method
+
+Consider the statistical model $$
+x_t = \theta + x_{t-1} + \epsilon_t.
+$$ This is a random walk with drift $\theta$. What is maximum likelihood estimate for $\theta$? If we use this for forecasting, what is the formula for the $h$-step ahead forecast?
+
+## 2. Drift vs linear trend method
+
+The drift method can be fit using the code `RW(y ~ drift())`. Starting with the following code snippet, compute forecasts for the drift method and the linear trend method for the population of Australia.
+
+```{r}
+global_economy |> filter(Country == "Australia")
+```
+
+Which forecast looks better? Which prediction intervals are more realistic?
+
+Can you explain the connection between this and the statistical modeling assumptions?
+
+## 3. Seasonal naive method with drift
+
+We have learnt one way to model both linear trend and seasonality by using time series decomposition. Here, we introduce another method.
+
+Think of a modification of the seasonal naive model to incorporate drift. What is the statistical model? What is the forecast equation?
+
+The method can be fit using the code `SNAIVE(y ~ drift())`.
+
+## 4. Forecasting
+
+Which of `NAIVE`, `SNAIVE`, `NAIVE(y ~ drift())` and `SNAIVE(y ~ drift())` are most appropriate for the following datasets?
+
+-   Bricks (`aus_production`)
+
+-   Household wealth (`hh_budget`)
+
+## 5. Prediction intervals
+
+Consider the `aus_arrivals` dataset. Filter the time series of arrivals from Japan to before 1995, and fit `NAIVE`, `SNAIVE`, `NAIVE(y ~ drift())` and `SNAIVE(y ~ drift())` . Use the fitted models to forecast the rest of the time series. Do their prediction intervals contain the truth?
