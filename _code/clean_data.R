@@ -52,3 +52,43 @@ process_bejing <- function(save = FALSE) {
   }
   beijing_pm25
 }
+
+process_rice <- function(save = FALSE) {
+  rice_price <- read_csv(
+    str_c(RAW_DIR, "retail_prices.csv"), 
+    skip=9, n_max = 162, na="na") |> 
+    select(1, 2) |>
+    rename("Month" = `Data Series`, 
+           "thai_rice" = `Premium Thai Rice (Per 5 Kilogram) (Dollar)`) |> 
+    mutate(Month = yearmonth(Month)) |>
+    as_tsibble(index = Month)
+  if (save) {
+    saveRDS(rice_price, file = str_c(CLEANED_DIR, "rice_price.rds"))
+  }
+  rice_price
+}
+
+process_control_charts <- function(save = FALSE) {
+  ccharts <- read_table(str_c(RAW_DIR, "synthetic_control.data"), 
+                        col_names = FALSE)
+  chart_type <- as.factor(rep(c("Normal", "Cyclic", "Increasing", "Decreasing", 
+                                "Upward", "Downward"), each = 100))
+  ccharts <- ccharts |> 
+    mutate(Type = chart_type,
+           id = 1:600) |> 
+    pivot_longer(cols = contains("X"),
+                 values_to = "value") |>
+    mutate(Time = rep(1:60, 600)) |>
+    select(Time, value, id, Type) |>
+    as_tsibble(index = Time,
+               key = c(id, Type))
+  ccharts_train <- ccharts |>
+    filter((id %% 100) <= 80)
+  ccharts_test <- ccharts |>
+    filter((id %% 100) > 80)
+  ccharts = list("train" = ccharts_train, "test" = ccharts_test)
+  if (save) {
+    saveRDS(ccharts, file = str_c(CLEANED_DIR, "ccharts.rds"))
+  }
+  ccharts
+}
