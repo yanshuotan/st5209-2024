@@ -2,7 +2,7 @@
 title: "ST5209/X Assignment 1"
 format: pdf
 editor: visual
-author: "Due 22 Jan, 11.59pm"
+author: "Due 29 Jan, 11.59pm"
 ---
 
 ## Set up

@@ -43,11 +43,11 @@ What is the statistical model for the linear trend method?
 
 Consider the statistical model $$
 x_t = \theta + x_{t-1} + \epsilon_t.
-$$ This is a random walk with drift $\theta$. What is maximum likelihood estimate for $\theta$? If we use this for forecasting, what is the formula for the $h$-step ahead forecast?
+$$ This is a random walk with drift $\theta$. What is the conditional distribution $p_\theta(x_t|x_{t-1})$? What is maximum likelihood estimate for $\theta$? If we use this for forecasting, what is the formula for the $h$-step ahead forecast?
 
 ## 2. Drift vs linear trend method
 
-The drift method can be fit using the code `RW(y ~ drift())`. Starting with the following code snippet, compute forecasts for the drift method and the linear trend method for the population of Australia.
+The drift method can be fit using the code `RW(y ~ drift())`. Starting with the following code snippet, compute forecasts using the drift method and the linear trend method for the population of Australia for the next 50 years .
 
 ```{r}
 global_economy |> filter(Country == "Australia")
