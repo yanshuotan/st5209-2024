@@ -1,0 +1,316 @@
+---
+title: "Week 4 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+library(broom)
+```
+
+## 1. Simple forecasting strategies and statistical models
+
+For all methods, note that the forecast distribution is the conditional distribution for $x_{n+h}$ given the observed data and the fitted parameter, i.e., it is
+
+$$
+p_{\hat \theta}(x_{n+h}|x_1,x_2,\ldots,x_n)
+$$
+
+### Mean method
+
+Show that the mean method is derived from the statistical model shown in the video, i.e. $$
+x_t = \theta + \epsilon_t
+$$ with $\epsilon_1,\epsilon_2,\ldots,\epsilon_n \sim_{i.i.d.} \mathcal{N}(0,\sigma^2)$.
+
+------------------------------------------------------------------------
+
+The mean method gives the forecast
+
+$$
+\hat x_{n+h|n} = \frac{1}{n}\sum_{t=1}^n x_t.
+$$
+
+Given the statistical model above, the forecast distribution has mean equal to $\theta$. Hence, we just need to know what is the estimate of $\hat\theta$ from $x_1,x_2,\ldots,x_n$.
+
+Now observe that $x_1,x_2,\ldots,x_n$ are i.i.d. Gaussians with the same mean.
+
+Hence, the best estimate is the sample mean $\bar x_n$.
+
+More rigorously, we can write the likelihood as
+
+$$
+p_\theta(x_{1:n}) \propto \exp\left(- \frac{1}{2\sigma^2}\sum_{t=1}^n (x_t - \theta)^2 \right)
+$$
+
+Taking a logarithm gives
+
+$$
+\log p_\theta(x_{1:n}) = - \frac{1}{2\sigma^2}\sum_{t=1}^n (x_t - \theta)^2 + C.
+$$
+
+This is maximized by $\bar x_n$.
+
+------------------------------------------------------------------------
+
+### Naive method
+
+Show that the naive method is derived from the statistical model shown in the video, i.e. $$
+x_t = x_{t-1} + \epsilon_t
+$$ {#eq-naive-method} with $\epsilon_1,\epsilon_2,\ldots,\epsilon_n \sim_{i.i.d.} \mathcal{N}(0,\sigma^2)$.
+
+------------------------------------------------------------------------
+
+The naive method gives the forecast
+
+$$
+\hat x_{n+h|n} = x_n
+$$
+
+To derive this from the model, recurse @eq-naive-method to get
+
+$$
+x_{n+h} = x_n + \epsilon_{n+1} + \epsilon_{n+2} + \cdots + \epsilon_{n+h}.
+$$
+
+This shows that
+
+$$
+x_{n+h}|x_{1:n} \sim \mathcal{N}(x_n,h\sigma^2).
+$$
+
+The mean of this distribution is $x_n$.
+
+Note that this also gives the distributional forecast.
+
+------------------------------------------------------------------------
+
+### Seasonal naive method
+
+What is the statistical model associated with the seasonal naive method?
+
+------------------------------------------------------------------------
+
+The seasonal naive method gives the forecast
+
+$$
+\hat x_{n+h|n} = x_{n - p + (h~\text{mod}~p)}.
+$$
+
+In analogy with the naive method, we have
+
+$$
+x_t = x_{t-p} + \epsilon_t
+$$
+
+------------------------------------------------------------------------
+
+### Linear trend method
+
+What is the statistical model for the linear trend method?
+
+------------------------------------------------------------------------
+
+We have already seen this model in the notes. It is
+
+$$
+x_t = \beta_0 + \beta_1 t + \epsilon_t
+$$
+
+------------------------------------------------------------------------
+
+### Drift method
+
+Consider the statistical model $$
+x_t = \theta + x_{t-1} + \epsilon_t.
+$$ This is a random walk with drift $\theta$. What is the conditional distribution $p_\theta(x_t|x_{t-1})$? What is maximum likelihood estimate for $\theta$? If we use this for forecasting, what is the formula for the $h$-step ahead forecast?
+
+------------------------------------------------------------------------
+
+Similar to the naive method, we have
+
+$$
+x_{n+h} = x_n + h\theta + \sum_{t=n+1}^{n+h} \epsilon_t
+$$
+
+so that the mean of the forecast distribution is
+
+$$
+\hat x_{n+h|n} = x_n + h\theta.
+$$
+
+Similar to the mean method, we just have to estimate $\theta$.
+
+We have
+
+$$
+p_\theta(x_t|x_{t-1}) \propto \exp\left(-\frac{1}{2\sigma^2}(x_t - \theta - x_{t-1})^2\right)
+$$
+
+Multiplying these together for $t=2,3,\ldots,n)$, we get
+
+$$
+p(x_2\ldots,x_n|x_1) \propto \exp\left(-\frac{1}{2\sigma^2}\sum_{t=2}^n (x_t - x_{t-1} - \theta)^2\right)
+$$
+
+The maximizer is hence $\hat\theta = \frac{1}{n-1}\sum_{t=2}^n (x_t - x_{t-1}) = \frac{x_n - x_1}{n-1}$.
+
+The forecast is thus
+
+$$
+\hat x_{n+h|n} = x_n + h \cdot \frac{x_n-x_1}{n-1}.
+$$
+
+------------------------------------------------------------------------
+
+## 2. Drift vs linear trend method
+
+The drift method can be fit using the code `RW(y ~ drift())`. Starting with the following code snippet, compute forecasts for the next 50 years using the drift method and the linear trend method for the population of Australia.
+
+```{r}
+global_economy |> filter(Country == "Australia")
+```
+
+Which forecast looks better? Which prediction intervals are more realistic?
+
+Can you explain the connection between this and the statistical modeling assumptions?
+
+------------------------------------------------------------------------
+
+```{r}
+global_economy |> 
+  filter(Country == "Australia") |>
+  model(LinTrend = TSLM(Population ~ trend()), 
+        Drift = NAIVE(Population ~ drift())) |> 
+  forecast(h = 50) |> 
+  autoplot(global_economy)
+```
+
+The drift method forecast looks better as it starts closer to the last value of the time series.
+
+The drift method's prediction intervals become wider over time, while the linear trend method prediction intervals do not. The former is thus more realistic.
+
+The assumption for the linear trend method is that there is a deterministic trend and the noise is purely observational.
+
+The assumption for the drift method is that there is an inherent state that is changing stochastically over time.
+
+The latter more accurately describes population growth, while the former more accurately describes something like the position of a particle moving in a vacuum, where the position is measured by a noisy instrument.
+
+------------------------------------------------------------------------
+
+## 3. Seasonal naive method with drift
+
+We have learnt one way to model both linear trend and seasonality by using time series decomposition. Here, we introduce another method.
+
+Think of a modification of the seasonal naive model to incorporate drift. What is the statistical model? What is the forecast equation?
+
+The method can be fit using the code `SNAIVE(y ~ drift())`.
+
+------------------------------------------------------------------------
+
+Statistical model:
+
+$$
+x_t = x_{t-p} + \theta + \epsilon_t
+$$
+
+Repeating the steps from the seasonal naive method derivation, we have
+
+$$
+\hat\theta = \frac{1}{n-p}\sum_{t=p+1}^n (x_t - x_{t-p})
+$$
+
+To get the forecast, we count the number of drift terms to add: It is $(h - k)/p + 1$, where $k = h~\text{mod}~p$. Combining this with the formula for $\hat\theta$ gives
+
+$$
+\hat x_{n+h|n} = x_{n - p + k} + \frac{(h-k)/p + 1}{n-p}\sum_{t=p+1}^n(x_t - x_{t-p}).
+$$
+
+------------------------------------------------------------------------
+
+## 4. Forecasting
+
+Which of `NAIVE`, `SNAIVE`, `NAIVE(y ~ drift())` and `SNAIVE(y ~ drift())` are most appropriate for the following datasets?
+
+-   Bricks (`aus_production`)
+
+-   Household wealth (`hh_budget`)
+
+------------------------------------------------------------------------
+
+```{r}
+aus_production |>
+  autoplot(Bricks)
+```
+
+The time plot shows strong seasonality and a possibly nonlinear trend.
+
+We hence try out seasonal naive with and without drift.
+
+```{r}
+aus_production |>
+  filter(!is.na(Bricks)) |>
+  model(SNaive = SNAIVE(Bricks),
+        SNaiveDrift = SNAIVE(Bricks ~ drift())) |>
+  forecast() |>
+  autoplot(aus_production, level = NULL)
+```
+
+```{r}
+hh_budget |>
+  autoplot(Wealth)
+```
+
+There does not seem to be seasonality in any of the four time series, but they seem to exhibit some upward trend. Hence, we will try applying the naive method with drift.
+
+```{r}
+hh_budget |>
+  model(NAIVE(Wealth ~ drift())) |>
+  forecast(h = 10) |>
+  autoplot(hh_budget)
+```
+
+------------------------------------------------------------------------
+
+## 5. Prediction intervals
+
+Consider the `aus_arrivals` dataset. Filter the time series of arrivals from Japan to before 1995, and fit `NAIVE`, `SNAIVE`, `NAIVE(y ~ drift())` and `SNAIVE(y ~ drift())` . Use the fitted models to forecast the rest of the time series.
+
+Which model seems like the best fit given the data up to Q4 1994?
+
+Do their prediction intervals contain the truth?
+
+------------------------------------------------------------------------
+
+```{r}
+#| warning: FALSE
+aus_jap_before95 <- aus_arrivals |>
+  filter(Origin == "Japan") |>
+  filter_index(~ "1994 Q4")
+
+aus_jap_fc <- aus_jap_before95 |>
+  model(Naive = NAIVE(Arrivals),
+        SNaive = SNAIVE(Arrivals),
+        Drift = NAIVE(Arrivals ~ drift()),
+        SDrift = SNAIVE(Arrivals ~ drift())) |>
+  forecast(h = 71)
+```
+
+```{r}
+aus_jap_fc |> autoplot(aus_jap_before95, level = NULL)
+```
+
+The seasonal naive method with drift seems like the best method, looking at the historical data from before 1995, but its prediction intervals do not contain the future values of the time series.
+
+```{r}
+aus_jap_fc |> filter(.model == "SDrift") |>
+  autoplot(aus_arrivals)
+```
+
+The moral of the story is that, as mentioned in the video lecture, we should not take prediction intervals at face value, as they depend on the fitted model being "correct". This is rarely the case, especially given the possibility of future unforeseen (and therefore unmodeled) scenarios.
