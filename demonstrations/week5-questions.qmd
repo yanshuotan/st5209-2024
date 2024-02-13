@@ -1,0 +1,63 @@
+---
+title: "Week 4 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+library(broom)
+```
+
+## 1. Train test split
+
+```{r}
+takeaway <- aus_retail |>
+  filter(Industry == "Takeaway food services") |>
+  summarise(Turnover = sum(Turnover))
+```
+
+a.  Starting with the above snippet, create a training set for Australian takeaway food turnover (`aus_retail`) by withholding the last four years as a test set.
+
+b.  Fit all the appropriate benchmark methods to the training set and forecast the periods covered by the test set.
+
+c.  Compute the accuracy of your forecasts. Which method does best?
+
+d.  Make a time plot of the forecasts to verify this.
+
+e.  Which error metrics are preferred and why? How to interpret them?
+
+f.  If RMSSE or MASE are larger than 1, does it mean that the forecast method is worse than the naive method?
+
+g.  What is a problem with doing a train test split?
+
+## 2. Cross-validation
+
+a.  Perform cross-validation for Australian takeaway food turnover with $h=4$.
+b.  Why is error smaller compared to a single train-test split?
+c.  Why might we want to set `.step` to a larger value? What goes wrong if we set it to be too large a value?
+d.  If we are mostly interested in forecast accuracy 4 months ahead, how should we change the code to focus on this task?
+
+## 3. Holt linear method and transformations
+
+Forecast the Chinese GDP from the `global_economy` data set using the Holt linear trend method. Experiment with damping and Box-Cox transformations. Try to develop an intuition of what each is doing to the forecasts.
+
+## 4. Comparing exponential smoothing methods
+
+Fit ETS models to the following datasets.
+
+-   `globtemp`
+-   `fma::sheep`
+-   `diabetes`
+-   `gafa_stock`
+-   `pelt`
+
+a.  What happens when no formula is provided to `ETS`?
+b.  When are multiplicative errors chosen?
+c.  How can we identify the model coefficients?
