@@ -1,0 +1,386 @@
+---
+title: "Week 5 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## 1. Train test split
+
+```{r}
+takeaway <- aus_retail |>
+  filter(Industry == "Takeaway food services") |>
+  summarise(Turnover = sum(Turnover))
+```
+
+a.  Starting with the above snippet, create a training set for Australian takeaway food turnover (`aus_retail`) by withholding the last four years as a test set.
+
+------------------------------------------------------------------------
+
+First, we make a time plot to inspect the time series.
+
+```{r}
+takeaway |> autoplot(Turnover)
+```
+
+The code to create the train set is as follows.
+
+```{r}
+takeaway_train <- takeaway |> 
+  slice_head(n = nrow(takeaway) - (4 * 12))
+```
+
+b.  Fit all the appropriate benchmark methods to the training set and forecast the periods covered by the test set.
+
+------------------------------------------------------------------------
+
+```{r}
+fit <- takeaway_train |>
+  model(
+    naive = NAIVE(Turnover),
+    drift = RW(Turnover ~ drift()),
+    mean = MEAN(Turnover),
+    snaive = SNAIVE(Turnover),
+    snaive_drift = SNAIVE(Turnover ~ drift())
+  )
+fc <- fit |> forecast(h = "4 years")
+```
+
+------------------------------------------------------------------------
+
+c.  Compute the accuracy of your forecasts. Which method does best?
+
+------------------------------------------------------------------------
+
+```{r}
+fc |>
+  accuracy(takeaway) |>
+  arrange(MASE)
+```
+
+------------------------------------------------------------------------
+
+d.  Make a time plot of the forecasts to verify this.
+
+------------------------------------------------------------------------
+
+```{r}
+fc |> 
+  autoplot(takeaway, level = NULL)
+```
+
+------------------------------------------------------------------------
+
+e.  Which error metrics are preferred and why? How to interpret them?
+
+------------------------------------------------------------------------
+
+RMSSE and MASE are preferred because they are more interpretable. They are MSE and MASE divided by the one-step-ahead training error of the naive method. This is similar logic to $R^2$.
+
+------------------------------------------------------------------------
+
+f.  If RMSSE or MASE are larger than 1, does it mean that the forecast method is worse than the naive method?
+
+------------------------------------------------------------------------
+
+No, because the error for the naive method is computed on the training set. Furthermore, it is one-step-ahead error, whereas the test error is potentially over a long forecast horizon.
+
+------------------------------------------------------------------------
+
+d.  What is a problem with doing a train test split?
+
+------------------------------------------------------------------------
+
+Cannot focus on a specific forecast horizon.
+
+------------------------------------------------------------------------
+
+## 2. Cross-validation
+
+a.  Perform cross-validation for Australian takeaway food turnover with $h=4$.
+
+------------------------------------------------------------------------
+
+```{r}
+takeaway |> 
+  stretch_tsibble(.init = 50, .step = 5) |>
+  model(
+    naive = NAIVE(Turnover),
+    drift = RW(Turnover ~ drift()),
+    mean = MEAN(Turnover),
+    snaive = SNAIVE(Turnover),
+    snaive_drift = SNAIVE(Turnover ~ drift())
+  ) |>
+  forecast(h = 4) |>
+  accuracy(takeaway)
+```
+
+------------------------------------------------------------------------
+
+b.  Why is the error smaller compared to a single train-test split?
+
+------------------------------------------------------------------------
+
+Because the CV error is measured with respect to forecasts that are 1 to 4 steps ahead. On the other hand, the train-test split error involved that of forecasts up to 48 steps ahead.
+
+------------------------------------------------------------------------
+
+c.  Why might we want to set `.step` to a larger value? What goes wrong if we set it to be too large a value?
+
+------------------------------------------------------------------------
+
+`.step` controls the number of splits made. If it is too small, we have many splits, which may lead to high computational overhead. On the other hand, if it is too big, we have too few splits, which means that we compute the error over too few data points.
+
+------------------------------------------------------------------------
+
+d.  If we are mostly interested in forecast accuracy 4 months ahead, how should we change the code to focus on this task?
+
+------------------------------------------------------------------------
+
+```{r}
+takeaway |> 
+  stretch_tsibble(.init = 50, .step = 5) |>
+  model(
+    naive = NAIVE(Turnover),
+    drift = RW(Turnover ~ drift()),
+    mean = MEAN(Turnover),
+    snaive = SNAIVE(Turnover),
+    snaive_drift = SNAIVE(Turnover ~ drift())
+  ) |>
+  forecast(h = 4) |>
+  group_by(.id) |>                                            
+  mutate(h = ((row_number() - 1) %% 4) + 1) |>
+  ungroup() |>
+  filter(h == 4) |>
+  as_fable(response = "Turnover", distribution = Turnover) |>
+  accuracy(takeaway)
+```
+
+------------------------------------------------------------------------
+
+## 3. Holt linear method and transformations
+
+Forecast the Chinese GDP from the `global_economy` data set using the Holt linear trend method. Experiment with damping and Box-Cox transformations. Try to develop an intuition of what each is doing to the forecasts.
+
+------------------------------------------------------------------------
+
+First, create the filtered dataset and plot it.
+
+```{r}
+china_gdp <- global_economy |>
+  filter(Country == "China") |>
+  select(Year, GDP)
+
+china_gdp |> autoplot(GDP)
+```
+
+Seems like there is an exponential trend. Since Holt's method extrapolates the trend linearly, it makes sense to transform the time series so that the trend looks linear. A Box-Cox transformation with $\lambda = 0.2$ seems to do this reasonably well.
+
+```{r}
+china_gdp |>
+  autoplot(box_cox(GDP, 0.2))
+```
+
+We will fit four models, exploring the vanilla and damped versions of Holt's method, together with combining it with either the Box-Cox transform above or the log transform.
+
+```{r}
+fit <- china_gdp |>
+  model(
+    ets = ETS(GDP ~ error("A") + trend("A") + season("N")),
+    ets_damped = ETS(GDP ~ error("A") + trend("Ad") + season("N")),
+    ets_bc = ETS(box_cox(GDP, 0.2) ~ error("A") + trend("A") + season("N")),
+    ets_log = ETS(log(GDP) ~ error("A") + trend("A") + season("N"))
+  )
+
+fit
+```
+
+We now plot the 20 year forecasts for all 4 methods and compare them.
+
+```{r}
+fit |> 
+  forecast(h = "20 years") |>
+  autoplot(china_gdp, level = NULL)
+```
+
+Damping didn't seem to have a large effect on the forecasts, but it seems like the transformation did.
+
+------------------------------------------------------------------------
+
+## 4. Comparing exponential smoothing methods
+
+Fit ETS models to the following datasets.
+
+-   `globtemp`
+-   `fma::sheep`
+-   `diabetes`
+-   `gafa_stock`
+-   `pelt`
+
+a.  What happens when no formula is provided to `ETS`?
+
+------------------------------------------------------------------------
+
+In that case, `ETS` automatically performs model selection to pick the "best" ETS model.
+
+------------------------------------------------------------------------
+
+b.  When are multiplicative errors chosen?
+
+------------------------------------------------------------------------
+
+They are chosen for `diabetes` and `gafa_stock`.
+
+------------------------------------------------------------------------
+
+c.  How can we identify the model coefficients?
+
+------------------------------------------------------------------------
+
+Use `tidy()` on the mable (output of `model()`).
+
+------------------------------------------------------------------------
+
+```{r}
+globtemp <- astsa::globtemp |>
+  as_tsibble() |>
+  rename(Year = index,
+         Temp = value)
+
+globtemp_fit <- globtemp |>
+  model(ETS(Temp))
+
+globtemp_fit
+```
+
+The model chosen is SES.
+
+```{r}
+globtemp_fit |>
+  forecast(h = 20) |>
+  autoplot(globtemp)
+```
+
+If we filter for only the years from 1960 onwards, we get Holt's linear method.
+
+```{r}
+globtemp <- astsa::globtemp |>
+  as_tsibble() |>
+  filter_index("1960" ~ .) |>
+  rename(Year = index,
+         Temp = value)
+
+globtemp_fit <- globtemp |>
+  model(ETS(Temp))
+
+globtemp_fit
+```
+
+```{r}
+globtemp_fit |>
+  forecast(h = 20) |>
+  autoplot(globtemp)
+```
+
+```{r}
+globtemp_fit |> tidy()
+```
+
+Alpha and beta are very small, which indicates very slow decay in the weights, as befits the noisy time series.
+
+We now try to fit Holt's linear method to the full time series. We see that the fitted model parameters are different from when only fitting the time series from 1960 onward. Here, alpha is bigger, which implies faster decay in the weights. This is probably due to the changing level of the time series.
+
+```{r}
+globtemp <- astsa::globtemp |>
+  as_tsibble() |>
+  rename(Year = index,
+         Temp = value)
+
+globtemp_fit <- globtemp |>
+  model(ETS(Temp ~ error("A") + trend("A") + season("N")))
+
+globtemp_fit |> tidy()
+```
+
+------------------------------------------------------------------------
+
+```{r}
+sheep <- fma::sheep |>
+  as_tsibble() |>
+  rename(Year = index,
+         Sheep = value)
+
+sheep_fit <- sheep |>
+  model(ETS(Sheep))
+
+sheep_fit |> tidy()
+```
+
+Very large alpha means very fast decay in the weights. This is almost just the naive method.
+
+```{r}
+sheep_fit |>
+  forecast(h = 10) |>
+  autoplot(sheep)
+```
+
+------------------------------------------------------------------------
+
+```{r}
+diabetes <- read_rds("../_data/cleaned/diabetes.rds")
+
+diabetes_fit <- diabetes |>
+  model(ETS(TotalC))
+
+diabetes_fit |>
+  forecast(h = 24) |>
+  autoplot(diabetes)
+```
+
+```{r}
+diabetes_fit
+```
+
+We end up with multiplicative Holt-Winters.
+
+```{r}
+diabetes_fit |> tidy()
+```
+
+Alpha, beta, and gamma are all small, so the weights decay slowly. This implies that the time series patterns are quite consistent.
+
+------------------------------------------------------------------------
+
+```{r}
+gafa_regular <- gafa_stock |>
+  group_by(Symbol) |>
+  mutate(trading_day = row_number()) |>
+  ungroup() |>
+  as_tsibble(index = trading_day, regular = TRUE)
+
+gafa_stock |> autoplot(Close)
+```
+
+```{r}
+gafa_fit <- gafa_regular |>
+  model(ETS(Close))
+
+gafa_fit
+```
+
+```{r}
+gafa_fit|>
+  forecast(h = 50) |>
+  autoplot(gafa_regular |> group_by_key() |> slice((n() - 100):n()))
+```
+
+------------------------------------------------------------------------

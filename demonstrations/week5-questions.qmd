@@ -1,5 +1,5 @@
 ---
-title: "Week 4 Demonstration"
+title: "Week 5 Demonstration"
 format: html
 editor: visual
 ---
@@ -40,9 +40,12 @@ g.  What is a problem with doing a train test split?
 ## 2. Cross-validation
 
 a.  Perform cross-validation for Australian takeaway food turnover with $h=4$.
-b.  Why is error smaller compared to a single train-test split?
+
+b.  Why is the error smaller compared to a single train-test split?
+
 c.  Why might we want to set `.step` to a larger value? What goes wrong if we set it to be too large a value?
-d.  If we are mostly interested in forecast accuracy 4 months ahead, how should we change the code to focus on this task?
+
+d.  If we are mostly interested in forecast accuracy 4 months ahead, how should we change the code to focus on this task? How do these errors compare to before?
 
 ## 3. Holt linear method and transformations
 
@@ -59,5 +62,7 @@ Fit ETS models to the following datasets.
 -   `pelt`
 
 a.  What happens when no formula is provided to `ETS`?
+
 b.  When are multiplicative errors chosen?
+
 c.  How can we identify the model coefficients?
