@@ -1,0 +1,55 @@
+---
+title: "Week 6 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## 1. ACVF, ACF, and stationarity
+
+Consider the time series defined as $$
+X_t = U_1 \sin(2\pi \omega t) + U_2\cos(2\pi\omega t),
+$$ where $U_1$ and $U_2$ are independent random variables with zero mean and variance 1.
+
+a.  Compute the ACVF of $(X_t)$.
+b.  Is $(X_t)$ weakly stationary?
+c.  Is $(X_t)$ strictly stationary? If not, what conditions can we put on $U_1$ and $U_2$ to make it stationary?
+
+## 2. Moving averages and differences
+
+Consider the linear trend model $$
+X_t = \beta_0 + \beta_1 t + W_t.
+$$ Define a time series $(Y_t)$ by taking a moving average of window 7. Define another times series $(Z_t)$ by taking a difference.
+
+a.  What is the mean function for $(Y_t)$? What is the ACVF for $(Y_t)$?
+b.  What is the mean function for $(Z_t)$? What is its ACVF?
+c.  What is the CCF of $(Y_t)$ and $(Z_t)$?
+
+## 3. Forecasting
+
+Let $(X_t)$ be a zero mean stationary process with $\rho_X(h) \neq 0$ for some $h$
+
+a.  Find $A$ minimizing $\mathbb{E}\lbrace (X_{n+h} - A X_n)^2 \rbrace$.
+b.  Use this to make a forecast for $X_{n+h}$ given $X_1,\ldots,X_n$.
+c.  What is the MSE for the forecast?
+d.  What is the consequence of this for ACF values?
+
+## 4.Residual analysis
+
+a.  What is the difference between innovation residuals and regular residuals? Why do we perform residual analysis on the former rather than the latter?
+b.  Starting with the following code snippet, fit several models to the Australian takeaway turnover time series and analyze their residuals. Which models have a good fit? Compare this with their CV error.
+
+```{r}
+takeaway <- aus_retail |>
+  filter(Industry == "Takeaway food services") |>
+  summarise(Turnover = sum(Turnover))
+```
