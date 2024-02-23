@@ -1,0 +1,215 @@
+---
+title: "Week 6 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## 1. ACVF, ACF, and stationarity
+
+Consider the time series defined as $$
+X_t = U_1 \sin(2\pi \omega t) + U_2\cos(2\pi\omega t),
+$$ where $U_1$ and $U_2$ are independent random variables with zero mean and variance 1.
+
+a.  Compute the ACVF of $(X_t)$.
+b.  Is $(X_t)$ weakly stationary?
+c.  Is $(X_t)$ strictly stationary? If not, what conditions can we put on $U_1$ and $U_2$ to make it stationary?
+
+$$
+\begin{split}
+\gamma_X(s, t) & = \text{Cov}\lbrace X_t,X_s\rbrace \\
+& = \text{Cov}\lbrace U_1 \sin(2\pi \omega s) + U_2\cos(2\pi\omega s), U_1 \sin(2\pi \omega t) + U_2\cos(2\pi\omega t)\rbrace \\
+& = \sin(2\pi \omega s)\sin(2\pi\omega t)\text{Cov}\lbrace U_1, U_1 \rbrace + \sin(2\pi\omega s)\cos(2\pi\omega t)\text{Cov}\lbrace U_1, U_2 \rbrace \\
+& \quad\quad + \cos(2\pi\omega s)\sin(2\pi\omega t)\text{Cov}\lbrace U_2, U_1 \rbrace + \cos(2\pi\omega s)\cos(2\pi\omega t)\text{Cov}\lbrace U_2, U_2 \rbrace \\
+& = \sin(2\pi\omega s)\sin(2\pi\omega t) + \cos(2\pi\omega s)\cos(2\pi\omega t) \\
+& = \cos(2\pi\omega(t-s))
+\end{split}
+$$
+
+Here, the last equality uses a triogonometric identity. Alternatively, can think of this as the dot product between two unit vectors.
+
+Observe that $\gamma_X(s, t)$ depends only on the difference $t-s$. We further have $$
+\mu_X(t) = \mathbb{E}\lbrace U_1 \sin(2\pi \omega t) + U_2\cos(2\pi\omega t) \rbrace = 0,
+$$ which does not depend on $t$. As such, $(X_t)$ is weakly stationary.
+
+On the other hand, depending on the choice of $U_1, U_2$, it may not be strongly stationary. For instance, let $U_1$ and $U_2$ have the distribution given by $$
+\mathbb{P}\lbrace U = 1\rbrace = \mathbb{P}\lbrace U = -1 \rbrace = 1/2.
+$$ This is known as the Rademacher distribution. Suppose also that $\omega = 1/4$. We then have $$
+X_4 = U_1\sin(2\pi) + U_2\cos(2\pi) = U_2. 
+$$ On the other hand, $$
+X_1 = U_1\sin(\pi/2) + U_2\cos(\pi/2) = U_1/\sqrt{2} + U_2/\sqrt{2}. 
+$$ As such, we have $$
+\mathbb{P}\lbrace X_1 = \sqrt{2}\rbrace = \mathbb{P}\lbrace X_1 = -\sqrt{2}\rbrace = 1/4
+$$ $$
+\mathbb{P}\lbrace X_1 = 0\rbrace = 1/2
+$$
+
+If $U_1, U_2 \sim N(0,1)$, then the process is strictly stationary, since it is a Gaussian process, in which case, all finite dimensional distributions depend only on the mean and AVCF values.
+
+------------------------------------------------------------------------
+
+## 2. ACF vs sample ACF
+
+Consider the linear trend model $$
+X_t = \beta_0 + \beta_1 t + W_t.
+$$
+
+a.  Compute the ACF of $(X_t)$.
+b.  Simulate a time series drawn from this model and plot its sample ACF.
+c.  Why does the sample ACF not look like the population ACF function?
+d.  Why does the asymptotic normality theorem for the ACF not apply?
+
+------------------------------------------------------------------------
+The ACF is
+$$
+\gamma_X(s, t) = \text{Cov}\lbrace X_t,X_s\rbrace = \text{Cov}\lbrace W_t,W_s\rbrace = \begin{cases}
+1 & \text{if}~s = t \\
+0 & \text{otherwise}.
+\end{cases}
+$$
+
+This hence depends only on the difference $s-t$.
+
+```{r}
+#| echo: TRUE
+beta0 <- 3
+beta1 <- 0.4
+ts_data <-
+  tibble(
+    idx = 1:200,
+    wn = rnorm(200),
+    xt = beta0 + beta1 * idx + wn
+  ) |>
+  as_tsibble(index = idx)
+ts_data |>
+  ACF(xt) |>
+  autoplot()
+```
+
+The sample ACF is calculated as
+$$
+\hat\gamma_X(h) = \frac{1}{n}\sum_{i=1}^{n-h}(X_i - \bar X) (X_{i+h} - \bar X).
+$$
+The expectation of each term is roughly
+$$
+\mathbb{E}\lbrace(X_i - (\beta_0 + \beta n/2))X_{i+h} - (\beta_0 + \beta n/2))\rbrace.
+$$
+This is not the covariance between them because $\beta_0 + \beta n /2$ is not their means unless $i = n/2$ or $i+h = n/2$.
+
+The asymptotic normality theorem does not apply because it requires the time series to be stationary.
+Since the mean function $\beta_0 + \beta_1 t$ depends on $t$, $(X_t)$ is not stationary.
+
+------------------------------------------------------------------------
+
+## 3. Forecasting
+
+Let $(X_t)$ be a zero mean stationary process with $\rho_X(h) \neq 0$ for some $h$
+
+a.  Find $A$ minimizing $\mathbb{E}\lbrace (X_{n+h} - A X_n)^2 \rbrace$.
+b.  Use this to make a forecast for $X_{n+h}$ given $X_1,\ldots,X_n$.
+c.  What is the MSE for the forecast?
+d.  What is the consequence of this for ACF values?
+
+------------------------------------------------------------------------
+
+$$
+\begin{split}
+\frac{d}{dA}\mathbb{E}\lbrace (X_{n+h} - A X_n)^2 \rbrace & = \frac{d}{dA} \left(\mathbb{E}\lbrace X_{n+h}^2\rbrace - 2A\mathbb{E}\lbrace X_{n+h} X_n\rbrace + A^2\mathbb{E}\lbrace X_n^2 \rbrace\right) \\
+& = -2\mathbb{E}\lbrace X_{n+h} X_n\rbrace + 2A\mathbb{E}\lbrace X_n^2 \rbrace.
+\end{split}
+$$
+This is thus minimized by
+$$
+A = \frac{\mathbb{E}\lbrace X_{n+h} X_n\rbrace}{\mathbb{E}\lbrace X_n^2 \rbrace} = \frac{\gamma_X(h)}{\gamma_X(0)} = \rho_X(h).
+$$
+
+We can forecast via
+$$
+\hat X_{n+h|n} := \rho_X(h)X_n.
+$$
+The MSE for this forecast is
+$$
+\begin{split}
+\mathbb{E}\lbrace(X_{n+h} - \hat X_{n+h|n})^2\rbrace & = \mathbb{E}\lbrace(X_{n+h} - \rho_X(h)X_n)^2\rbrace \\
+& = \gamma_X(0) - 2\rho_X(h)\gamma_X(h) + \rho_X(h)^2\gamma_X(0) \\
+& = \gamma_X(0) - \rho_X(h)^2\gamma_X(0) \\
+& = \left(1 - \rho_X(h)\right)^2\gamma_X(0).
+\end{split}
+$$
+This value is smaller than the variance of $X_{n+h}$, so it improves over forecasting the mean of the time series, which is zero.
+Therfore, if the ACF values for the residuals of a model are nonzero, we can improve the forecasting model.
+
+
+------------------------------------------------------------------------
+
+## 4. Residual analysis
+
+a.  What is the difference between innovation residuals and regular residuals? Why do we perform residual analysis on the former rather than the latter?
+b.  Starting with the following code snippet, fit several models to the Australian takeaway turnover time series and analyze their residuals. Which models have a good fit? Compare this with their CV error.
+
+```{r}
+takeaway <- aus_retail |>
+  filter(Industry == "Takeaway food services") |>
+  summarise(Turnover = sum(Turnover))
+```
+
+------------------------------------------------------------------------
+
+If a transformation is performed, the innovation residuals are the one-step ahead forecasting errors, $y_t - \hat y_{t|t-1}$ for the transformed time series.
+The regular residuals are the errors for the original time series $x_t - \hat x_{t|t-1}$.
+
+We perform residual analysis for the former because the modeling assumption is that the innovation residuals are white noise.
+
+```{r}
+fit <- takeaway |> 
+  model(
+    naive = NAIVE(Turnover),
+    drift = RW(Turnover ~ drift()),
+    mean = MEAN(Turnover),
+    snaive = SNAIVE(Turnover),
+    snaive_drift = SNAIVE(Turnover ~ drift()),
+    ets = ETS(Turnover),
+    ets_log = ETS(log(Turnover))
+  ) 
+
+fit |>
+  augment() |>
+  features(.innov, ljung_box, lag = 24)
+```
+
+```{r}
+fit
+```
+
+```{r}
+takeaway |> 
+  stretch_tsibble(.step = 20, .init = 200) |>
+  model(
+    naive = NAIVE(Turnover),
+    drift = RW(Turnover ~ drift()),
+    mean = MEAN(Turnover),
+    snaive = SNAIVE(Turnover),
+    snaive_drift = SNAIVE(Turnover ~ drift()),
+    ets = ETS(Turnover ~ error("M") + trend("Ad") + season("M")),
+    ets_log = ETS(log(Turnover) ~ error("A") + trend("A") + season("A"))
+  ) |>
+  forecast(h = 6) |>
+  accuracy(takeaway) |>
+  select(.model, RMSSE, MASE) |>
+  arrange(MASE)
+```
+
+The ranking via the LB test statistic and the CV error do not entirely match.
+Note that the LB statistic is a reflection of training error and measures "goodness of fit".
+Furthermore, the residuals from different methods may be on different scales and hence are not entirely comparable.
+
+------------------------------------------------------------------------
