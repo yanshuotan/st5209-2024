@@ -49,7 +49,7 @@ d.  Perform time series cross-validation for the three methods, using `.init = 5
 
 Consider the linear trend model $$
 X_t = \beta_0 + \beta_1 t + W_t.
-$$ Define a time series $(Y_t)$ by taking a moving average of with a symmetric window of size 7. Define another times series $(Z_t)$ by taking a difference.
+$$ Define a time series $(Y_t)$ by taking a moving average of $(X_t)$ with a symmetric window of size 7. Define another times series $(Z_t)$ by taking a difference of $(X_t)$.
 
 a.  What is the mean function for $(Y_t)$? What is the ACVF for $(Y_t)$?
 b.  What is the mean function for $(Z_t)$? What is its ACVF?
