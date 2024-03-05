@@ -1,0 +1,205 @@
+---
+title: "Week 7: Review"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## Summary
+
+### Data wrangling and visualization
+
+-   How to create tsibbles?
+-   What are the components of the tsibble data strucutre, in particular its index and key variables?
+-   How to detect and fill in missing or duplicated entries?
+-   How to filter a tsibble?
+-   How to make and interpret the following types of plots?
+    -   Time plot
+    -   Seasonal plot
+    -   Seasonal subseries plot
+    -   Scatter plots
+    -   Lag plots
+-   Time series patterns: Trend, seasonality, cycles
+    -   How are these defined?
+    -   How to recognize them from the plots?
+
+### Transformations
+
+-   How to implement the following transformations in R, when to use them, how to interpret the transformed time series?
+    -   Lags
+    -   Differences
+    -   Seasonal differences
+    -   Log transformation
+    -   Box-Cox transformations
+    -   Aggregation and downsampling
+    -   Moving averages and other rolling window transformations
+    -   Calendar adjustment
+    -   Population adjustment
+    -   Inflation adjustment
+-   What is the effect of window size on moving averages, especially for seasonal time series?
+
+### Decomposition
+
+-   Time series components: Trend, seasonal and remainder
+    -   How are these defined?
+    -   How are they related to time series patterns?
+-   Classical decomposition, in both additive and multiplicative forms
+    -   What are its assumptions?
+    -   How is it defined?
+    -   How do the assumptions lead to consistent estimation of the components?
+    -   How to implement it in R?
+-   What are some problems with the classical decomposition, and how can these be overcome?
+
+### Summary statistics
+
+-   What are summary statistics?
+-   How are the following summary statistics defined, how can they be computed, what are they used for?
+    -   (Sample) mean, variance, quantiles
+    -   (Sample) autocovariance and autocorrelation functions
+    -   (Sample) cross-correlation
+    -   Decomposition statistics: Strength of trend and strength of seasonality
+-   ACF plots
+    -   How to make and interpret them?
+    -   How does the plot look like when the time series is dominated by trend, seasonality, or short-term cycles?
+-   What is the use of summary statistics in time series classification?
+
+### Introduction to forecasting
+
+-   How are the following terms precisely defined?
+    -   Forecast
+    -   Forecast horizon
+    -   Forecast error
+-   Simple forecasting methods: How they are defined,
+    -   Mean method
+    -   Naive method
+    -   Seasonal naive method
+    -   Linear trend method
+    -   Drift method
+    -   Seasonal naive method with drift
+-   How can decomposition and transformations be used in forecasting?
+-   What are the statistical models associated with the simple forecasting methods?
+-   Prediction intervals
+    -   How are they defined?
+    -   How can they be calculated and plotted?
+    -   How much should we trust them?
+-   Forecast errors
+    -   What error metrics are used?
+    -   Why do we preferred scaled errors? How can we interpret them?
+-   Train-test splits
+    -   How is it defined? How to implement it in R?
+    -   Why can we not perform random splits?
+    -   What is their limitation?
+-   Time series cross-validation
+    -   How is it defined?
+    -   How can it be implemented in R?
+    -   How can we interpret the error?
+    -   What do the `.step` and `.init` parameters mean? And what is the tradeoff between setting a small value or large value?
+    -   How many error terms are used in calculating the total error?
+    -   How can we calculate the TSCV error for only $h$-step ahead forecasts?
+
+### Exponential smoothing
+
+-   For the following exponential smoothing methods, how are the methods defined? How can they be implemented in R?
+    -   Simple exponential smoothing
+    -   Holt linear trend method
+    -   Damped trend method
+    -   Holt-Winters' methods
+-   How are the parameters optimized?
+-   What is the meaning of each parameter? How can they be computed using R?
+-   When is each method preferred?
+-   What is the difference between additive and multiplicative versions of Holt-Winters?
+-   What happens when terms in the model are not specified when calling `ETS()`?
+
+### Stationary processes
+
+-   What is a time series model?
+-   How are weakly and strictly stationary process defined?
+-   How is joint stationarity defined?
+-   Mean, autocovariance, autocorrelation, and cross-correlation functions
+    -   How are they defined?
+    -   How to calculate them for simple time series models?
+-   How are the following types of time series models defined?
+    -   White noise
+    -   Random walk
+    -   Signal plus noise
+    -   Linear process
+    -   Gaussian process
+-   Asymptotic normality theorems for mean and ACF
+    -   What are the assumptions for the two theorems?
+    -   What is the limiting behavior for white noise?
+-   What is the Box-Jenkins method? What is its relationship to stationary processes?
+-   What are two methods of transforming a time series to make it stationary?
+-   What are residuals?
+-   How can we use an ACF plot to test whether a time series is drawn from a white noise model?
+-   Ljung-Box test
+    -   What is the test statistic?
+    -   What is the limiting behavior of the test statistic?
+    -   How is the test defined?
+    -   How can we implement it using R?
+    -   How can we choose the lag for the test?
+-   How to simulate a time series from a time series model in R?
+
+## Questions
+
+a.  Load the data set `sg-births.csv`.
+
+b.  Make time, seasonal, and seasonal subseries plots.
+
+c.  Comment on all interesting features of the plots.
+
+d.  Without using software, sketch an ACF plot of the time series (the numbers don't have to be exactly correct, just the overall pattern).
+
+e.  Will a Box-Cox transformation be appropriate for this time series?
+
+f.  What sort of transformation may help to improve forecasting?
+
+g.  Will a classical decomposition be appropriate for this time series? What could you use to improve on classical decomposition?
+
+h.  Is this time series stationary?
+
+i.  Is the remainder component stationary?
+
+j.  Which of forecasting methods we have learnt may be appropriate for this time series?
+
+k.  Fit an additive Holt-Winters model. How can the model parameters be extracted? How can we visualize the different components of the model? Compute a forecast for March 2024 by hand. Check whether it agrees with the computed value.
+
+l.  Perform time series cross-validation to compare the different models for the forecast horizon $h=3$. Which model would you pick?
+
+m.  Are you satisfied with the best model? Why or why not?
+
+## Solutions
+
+```{r}
+sg_births <- read_rds("../_data/cleaned/sg-births.rds")
+```
+
+```{r}
+sg_births |> autoplot(Births)
+```
+
+```{r}
+sg_births |> gg_season(Births)
+```
+
+```{r}
+sg_births |> gg_subseries(Births)
+```
+
+```{r}
+sg_births |> ACF(Births) |> autoplot()
+```
+
+A Box-Cox transformation is not appropriate. It requires the amplitude of the fluctuations of the time series to increase with its level. That does not happen here because .
+
+```{r}
+
+```
