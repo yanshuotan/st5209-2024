@@ -78,7 +78,7 @@ library(gridExtra)
     -   Forecast
     -   Forecast horizon
     -   Forecast error
--   Simple forecasting methods: How they are defined, how to implement them in R?
+-   Simple forecasting methods: How they are defined,
     -   Mean method
     -   Naive method
     -   Seasonal naive method
@@ -152,26 +152,138 @@ library(gridExtra)
 
 a.  Load the data set `sg-births.csv`.
 
+```{r}
+sg_births <- read_rds("../_data/cleaned/sg-births.rds")
+```
+
 b.  Make time, seasonal, and seasonal subseries plots.
+
+```{r}
+sg_births |> autoplot(Births)
+```
+
+```{r}
+sg_births |> gg_season(Births)
+```
+
+```{r}
+sg_births |> gg_subseries(Births)
+```
 
 c.  Comment on all interesting features of the plots.
 
+From the time plot, we observe a downward trend between 1960 and the late 1970s, there is then a rise and dip between 1985 and 2005, and then a small one between 2005 and 2023.
+
+From the seasonal plot, we observe a yearly seasonality, with peaks in October and troughs in February. This is a well-known pattern in demographics. The seasonality however becomes less pronounced over time.
+
+We also observe two unusually large spikes in October 1988 and October 1990, which is probably related to the Chinese zodiac.
+
+The subseries plot shows that the trend is consistent across all months.
+
 d.  Without using software, sketch an ACF plot of the time series (the numbers don't have to be exactly correct, just the overall pattern).
+
+You should be able to sketch the graph below without having looked at it before hand. The trend implies highly positive values, while the seasonality will lead to a slight sinusoidal pattern of period 12.
+
+```{r}
+sg_births |> ACF(Births) |> autoplot()
+```
 
 e.  Will a Box-Cox transformation be appropriate for this time series?
 
+No. A Box-Cox transformation is not appropriate. These are applied when the fluctuations in a time series are positively correlated with its level. This does not seem to be th
+
 f.  What sort of transformation may help to improve forecasting?
+
+We can use calendar adjustment (divide by `days_in_month`). It can be computed as follows:
+
+```{r}
+sg_births_adjusted <- sg_births |>
+  mutate(BirthsPerDay = Births / days_in_month(Month))
+sg_births_adjusted |> gg_season(BirthsPerDay)
+```
 
 g.  Will a classical decomposition be appropriate for this time series? What could you use to improve on classical decomposition?
 
+A classical decomposition is not appropriate because the seasonality changes and because there are strong outlier values in 1988. We can improve on this by using an STL decomposition with robust option selected.
+
 h.  Is this time series stationary?
+
+No, the time series is not stationary since its mean function is not constant.
 
 i.  Is the remainder component stationary?
 
+The remainder component is also not stationary. Its behavior seems to change over time.
+
 j.  Which of forecasting methods we have learnt may be appropriate for this time series?
+
+Since there is seasonality, seasonal naive and various forms of Holt-Winters seem to be appropriate. Seasonal naive with drift is not appropriate as the trend does not appear to be linear.
 
 k.  Fit an additive Holt-Winters model. How can the model parameters be extracted? How can we visualize the different components of the model? Compute a forecast for March 2024 by hand. Check whether it agrees with the computed value.
 
+```{r}
+fit <- sg_births |>
+  model(HoltWinters = ETS(Births ~ error("A") + trend("A") + season("A")))
+fit |> tidy()
+```
+
+```{r}
+fit |> components() |> autoplot()
+```
+
+```{r}
+sg_births |> tail()
+```
+
+The last observation is 2023 Dec, so $h = 3$ The forecast value is given by $\hat x_{n+3|n} = l_n + 3b_n + s_{n - 9}$, where $n$ is the time index of the last observation. To extract $l_n$, $b_n$ and $s_{n-9}$, we use the following code:
+
+```{r}
+fit |> components() |> tail(10)
+```
+
+We thus calculate $$
+\hat x_{n+3|n} = 2821.979 + (-0.075) * 3 + (-79.722) = 2742.
+$$
+
+```{r}
+# The point forecast is 2742
+fit |> forecast(h = 3)
+```
+
 l.  Perform time series cross-validation to compare the different models for the forecast horizon $h=3$. Which model would you pick?
 
+```{r}
+sg_births_cv <- sg_births |> 
+  stretch_tsibble(.init = 100, .step = 20)
+
+fc <- sg_births_cv |>
+  model(SeasonalNaive = SNAIVE(Births),
+        HWAdd = ETS(Births ~ error("A") + trend("A") + season("A")),
+        HWMult = ETS(Births ~ error("M") + trend("A") + season("M")),
+        HWAddDamp = ETS(Births ~ error("A") + trend("Ad") + season("A")),
+        HWMultDamp = ETS(Births ~ error("M") + trend("Ad") + season("M"))) |>
+  forecast(h = 3)
+
+fc |> accuracy(sg_births) |>
+  select(.model, RMSSE, MASE) |>
+  arrange(RMSSE)
+```
+
+The Holt-Winters multiplicative method either with or without damping seems to work the best.
+
 m.  Are you satisfied with the best model? Why or why not?
+
+```{r}
+sg_births |>
+  model(HWMult = ETS(Births ~ error("M") + trend("A") + season("M")),
+        HWMultDamp = ETS(Births ~ error("M") + trend("Ad") + season("M"))) |>
+  augment() |>
+  features(.innov, ljung_box, lag = 24)
+```
+
+We're not satisfied because the Ljung-Box test rejects the hypothesis that the residuals are stationary. This means that these models are not good fits.
+
+```{r}
+sg_births |>
+  model(HWMult = ETS(Births ~ error("M") + trend("A") + season("M"))) |>
+  gg_tsresiduals()
+```
