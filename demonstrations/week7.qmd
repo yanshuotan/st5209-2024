@@ -222,7 +222,7 @@ k.  Fit an additive Holt-Winters model. How can the model parameters be extracte
 
 ```{r}
 fit <- sg_births |>
-  model(HoltWinters = ETS(Births ~ error("A") + trend("A") + season("A")))
+  model(HoltWinters = ETS(Births ~ error("A") + trend("Ad") + season("A")))
 fit |> tidy()
 ```
 
