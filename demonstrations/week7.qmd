@@ -218,7 +218,7 @@ j.  Which of forecasting methods we have learnt may be appropriate for this time
 
 Since there is seasonality, seasonal naive and various forms of Holt-Winters seem to be appropriate. Seasonal naive with drift is not appropriate as the trend does not appear to be linear.
 
-k.  Fit an additive Holt-Winters model. How can the model parameters be extracted? How can we visualize the different components of the model? Compute a forecast for March 2024 by hand. Check whether it agrees with the computed value.
+k.  Fit an additive Holt-Winters model with damping. How can the model parameters be extracted? How can we visualize the different components of the model? Compute a forecast for March 2024 by hand. Check whether it agrees with the computed value.
 
 ```{r}
 fit <- sg_births |>
