@@ -1,0 +1,40 @@
+---
+title: "Week 8 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## 1. AR(2)
+
+Consider the AR(2) equation $$
+X_t = \phi_1 X_{t-1} + \phi_2 X_{t-2} + W_t.
+$$
+
+a.  Under what conditions on $\phi_1$ and $\phi_2$ is the model causal?
+b.  Under what conditions on $\phi_1$ and $\phi_2$ does the ACF have periodic behavior?
+c.  The conditions on a) are equivalent to $$
+    \phi_1 + \phi_2 < 1, \quad \phi_2 - \phi_1 < 1, \quad |\phi_2| < 1.
+    $$ What region in 2D does this correspond to?
+d.  Use the function `ARMAacf()` to compute ACF plots for a few different choices of parameters.
+
+## 2. Linear process coefficients.
+
+Given an AR(p) model
+$$
+X_t = \sum_{j=0}^\infty \psi_j W_{t-j},
+$$
+write the coefficients in terms of the parameters $\phi_1,\phi_2,\ldots,\phi_p$.
+
+## 3. AR(p) theorems
+
+Understand the proofs of the theorems.
