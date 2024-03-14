@@ -17,6 +17,26 @@ library(gridExtra)
 ## 1. AR(2)
 
 Consider the AR(2) equation $$
+X_t = 1.5 X_{t-1} - 0.75 X_{t-2} + W_t.
+$$
+
+a.  What is the autoregressive polynomial?
+
+b.  What are its roots?
+
+c.  What patterns does its ACF exhibit?
+
+d.  Compute the general form of its ACF.
+
+e.  Confirm d) using `AMRAacf()`.
+
+f.  What times series pattern does this correspond to?
+
+g.  Confirm this by simulating from this time series model.
+
+## 2. AR(2) Part 2
+
+Consider the AR(2) equation $$
 X_t = \phi_1 X_{t-1} + \phi_2 X_{t-2} + W_t.
 $$
 
@@ -25,16 +45,17 @@ b.  Under what conditions on $\phi_1$ and $\phi_2$ does the ACF have periodic be
 c.  The conditions on a) are equivalent to $$
     \phi_1 + \phi_2 < 1, \quad \phi_2 - \phi_1 < 1, \quad |\phi_2| < 1.
     $$ What region in 2D does this correspond to?
-d.  Use the function `ARMAacf()` to compute ACF plots for a few different choices of parameters.
 
-## 2. Linear process coefficients.
+## 3. Linear process coefficients.
 
-Given an AR(p) model
-$$
+Given an AR(p) model $$
 X_t = \sum_{j=0}^\infty \psi_j W_{t-j},
-$$
-write the coefficients in terms of the parameters $\phi_1,\phi_2,\ldots,\phi_p$.
+$$ write the coefficients in terms of the parameters $\phi_1,\phi_2,\ldots,\phi_p$.
 
-## 3. AR(p) theorems
+## 4. AR(1) ACF
+
+Verify the formula for the ACVF and ACF of AR(1).
+
+## 5. AR(p) theorems
 
 Understand the proofs of the theorems.
