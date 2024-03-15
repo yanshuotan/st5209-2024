@@ -28,7 +28,7 @@ c.  What patterns does its ACF exhibit?
 
 d.  Compute the general form of its ACF.
 
-e.  Confirm d) using `AMRAacf()`.
+e.  Confirm d) using `ARMAacf()`.
 
 f.  What times series pattern does this correspond to?
 

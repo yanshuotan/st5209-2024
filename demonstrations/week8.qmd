@@ -1,0 +1,200 @@
+---
+title: "Week 8 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## 1. AR(2)
+
+Consider the AR(2) equation $$
+X_t = 1.5 X_{t-1} - 0.75 X_{t-2} + W_t.
+$$
+
+a.  What is the autoregressive polynomial?
+
+b.  What are its roots?
+
+c.  What patterns does its ACF exhibit?
+
+d.  Compute the general form of its ACF.
+
+e.  Confirm d) using `AMRAacf()`.
+
+f.  What times series pattern does this correspond to?
+
+g.  Confirm this by simulating from this time series model.
+
+------------------------------------------------------------------------
+
+The AR polynomial is
+
+$$
+\phi(z) = 1 - 1.5z +0.75z^2
+$$
+
+The roots are
+
+$$
+\frac{1.5 \pm \sqrt{(1.5)^2 - 4\cdot 0.75}}{2\cdot 0.75} = 1 \pm i/\sqrt{3}.
+$$
+
+Since the roots are complex, the ACF is a damped sinusoid.
+
+The general form is
+
+$$
+cz_1^h + \bar c \bar z_1^h = a|z_1|^{-h}\cos(h\theta+b)
+$$
+
+where $a$ and $b$ are constants depend on initial conditions, and
+
+$$
+\begin{split}
+\theta & = \arctan(Im(z_1)/Re(z_1)) \\
+& = \arctan(1/\sqrt{3}) \\
+& = \pi/6.
+\end{split}
+$$
+
+Hence, the period of the sinusoid is 12 units.
+
+```{r}
+ARMAacf(ar = c(1.5, -0.75), lag.max = 30) |> plot()
+```
+
+The ACF corresponds to a cyclic time series pattern with an approximate period of 12.
+
+```{r}
+arima.sim(model = list(ar = c(1.5, -0.75)), n = 100) |>
+  as_tsibble() |>
+  autoplot()
+```
+
+------------------------------------------------------------------------
+
+## 2. AR(2) Part 2
+
+Consider the AR(2) equation $$
+X_t = \phi_1 X_{t-1} + \phi_2 X_{t-2} + W_t.
+$$
+
+a.  Under what conditions on $\phi_1$ and $\phi_2$ is the model causal?
+b.  Under what conditions on $\phi_1$ and $\phi_2$ does the ACF have periodic behavior?
+c.  The conditions on a) are equivalent to[^1] $$
+    \phi_1 + \phi_2 < 1, \quad \phi_2 - \phi_1 < 1, \quad |\phi_2| < 1.
+    $$ What region in 2D does this correspond to?
+
+[^1]: See Example 3.9 and Problem 3.5 in Shumway and Stoffer.
+
+------------------------------------------------------------------------
+
+The AR polynomial is
+
+$$
+\phi(z) = 1 - \phi_1z - \phi_2z^2.
+$$
+
+Using the quadratic formula, we can write the roots of this polynomial as
+
+$$
+z_1,z_2 = \frac{\phi_1 \pm \sqrt{\phi_1^2 + 4\phi_2}}{-\phi_2}.
+$$
+
+The model is causal if $|z_1|,|z_2| > 1$.
+
+The ACF has periodic behavior if the roots are complex. This happens if and only if
+
+$$
+\phi_2 < -\frac{\phi_1^2}{4}.
+$$
+
+We reproduce a figure from Shumway and Stoffer (2000) to illustrate geometrically the values of $\phi_1$ and $\phi_2$
+
+![](causal_ar2.png)
+
+------------------------------------------------------------------------
+
+## 3. Linear process coefficients.
+
+Given an AR(p) model $$
+X_t = \sum_{j=0}^\infty \psi_j W_{t-j},
+$$ write the coefficients in terms of the parameters $\phi_1,\phi_2,\ldots,\phi_p$.
+
+------------------------------------------------------------------------
+
+As stated in the theorem on existence and uniqueness of solutions, the coefficients are defined via the equation
+
+$$
+\phi(z)\left(\sum_{j=0}^\infty \psi_j z^j\right) = 1.
+$$ {#eq-power-series-equality}
+
+Here, we treat all expressions symbolically, i.e. we do not care about series convergence. The left hand side is the product of a polynomial and a power series, which gives a power series:
+
+$$
+\sum_{j=0}^\infty c_j z^j
+$$
+
+The coefficients $c_0,c_1,\ldots$ can be defined by considering which terms in the product can combine to give an appropriate power of $z^j$. For instance, only the constant terms can multiply together to get a constant, so we have $c_0 = \psi_0$. To get a term with $z$, we need a multiply a constant term by one with $z$. This gives
+
+$$
+c_1 = \phi_1\psi_0 + \phi_0\psi_1.
+$$
+
+Generally, we have the formula
+
+$$
+c_k = \sum_{j=0}^p \phi_j\psi_{k-j}.
+$$
+
+If $\sum_{j=0}^\infty c_j z_j$ is equal to 1 as a power series, then we must have $c_0 = 1$, $c_k = 0$ for all $k \geq 1$. This allows us to solve for $\psi_j$ recursively since for $k=1,2,\ldots$, the resulting equation
+
+$$
+\sum_{j=0}^p \phi_j \psi_{k-j} = 0
+$$
+
+can be rewritten to express $\psi_k$ in terms of $\psi_{k-1}, \psi_{k-2},\ldots,\psi_0$.
+
+------------------------------------------------------------------------
+
+## 4. AR(1) ACF
+
+Verify the formula for the ACVF and ACF of AR(1).
+
+------------------------------------------------------------------------
+
+For any linear process $X_t = \sum_{j=0}^\infty \psi_j W_{t-j}$, we have
+
+$$
+\gamma_X(h) = \sigma^2\sum_{j=0}^\infty \psi_j\psi_{j+h}
+$$
+
+Now, note that for AR(1), we have $X_t = \sum_{j=0}^\infty \phi^j W_{t-j}$. Hence, plugging in $\psi_j = \phi^j$ gives
+
+$$
+\begin{split}
+\gamma_X(h) & = \sigma^2\sum_{j=0}^\infty \phi^{2j+h} \\
+& = \frac{\sigma^2\phi^h}{1-\phi^2}.
+\end{split}
+$$
+
+To compute the ACF, we have
+
+$$
+\rho_X(h) = \frac{\gamma_X(h)}{\gamma_X(0)} = \phi^h.
+$$
+
+------------------------------------------------------------------------
+
+## 5. AR(p) theorems
+
+Understand the proofs of the theorems.
