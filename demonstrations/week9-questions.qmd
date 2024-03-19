@@ -1,0 +1,46 @@
+---
+title: "Week 9 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## 1. Sample trajectories
+
+Read Chapter 10.8 of the course notes.
+
+a.    Sample a time series from a causal AR(2) model of length 50. You may choose your favorite parameters.
+b.    In R, how can you choose different methods of estimators for fitting the model parameters?
+
+## 2. AR(1)
+
+In Chapter 10.3 of the course notes, we showed how to compute forecasts and estimate model parameters for AR(1).
+
+a. Show directly that the AR(1) forecast is a best linear predictor.
+
+b. Show that the estimator we introduced was a method of moments estimator.
+
+c. What is the maximum likelihood estimate for AR(1)?
+
+## 3. Limiting forecast distribution
+
+What does the forecast distribution converge to as $n \to \infty$?
+
+## 4. Difference between estimators
+
+a.    For AR(1), compute the difference between the mean estimators from the method of moments and conditional least squares approaches.
+b.    How does the difference change as $n \to \infty$?
+
+## 5. Nonlinear autoregressive models
+
+Fit a nonlinear AR model on the `globtemp` dataset. 
+Compute its sum of squared residuals and compare it to that of a linear AR model.
