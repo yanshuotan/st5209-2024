@@ -93,7 +93,7 @@ e.  Write a 95% confidence interval for $\phi_1$ using your answers for d) and 3
 
 ## 5. Real data analysis
 
-a.  Load the dataset `astsa::globtemp` and convert it into a tsibble.
+a.  Load the dataset `globtemp.rds` in `_data/cleaned` and convert it into a tsibble.
 
 b.  Filter the time series to include measurements only up to 1960.
 
