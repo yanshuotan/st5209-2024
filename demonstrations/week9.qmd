@@ -1,0 +1,270 @@
+---
+title: "Week 9 Demonstration"
+format: html
+editor: visual
+---
+
+## Set up
+
+```{r}
+#| message: FALSE
+library(fpp3)
+library(tidyverse)
+library(slider)
+library(gridExtra)
+```
+
+## 1. Sample trajectories
+
+Read Chapter 10.8 of the course notes.
+
+a.  Sample a time series from a causal AR(2) model of length 50. You may choose your favorite parameters.
+b.  In R, how can you choose different methods of estimators for fitting the model parameters?
+
+------------------------------------------------------------------------
+
+```{r}
+set.seed(5209)
+n <- 50
+ar2_dat <-
+  tibble(
+    t = 1:n,
+    X = arima.sim(model = list(ar = c(1.5, -0.75)), n = n)
+  ) |>
+  as_tsibble(index = t)
+
+ar2_dat |>
+  autoplot(X)
+```
+
+In class, we learnt about 4 different estimators for the model parameters:
+
+-   Method of moments / Yule-Walker
+
+-   Full maximum likelihood
+
+-   Conditional max likelihood / conditional least squares
+
+-   Unconditional least squares
+
+The first 3 methods are implemented in base R and can be called using the `ar()` function. The documentation shows that the desired method can be specified:
+
+```         
+ar(x, aic = TRUE, order.max = NULL,
+   method = c("yule-walker", "burg", "ols", "mle", "yw"),
+   na.action, series, ...)
+```
+
+Burg is yet another estimator. More info can be found in Brockwell and Davis.
+
+------------------------------------------------------------------------
+
+## 2. AR(1)
+
+In Chapter 10.3 of the course notes, we showed how to compute forecasts and estimate model parameters for AR(1).
+
+a.  Show directly that the AR(1) forecast is a best linear predictor.
+
+b.  Show that the estimator we introduced was a method of moments estimator.
+
+c.  What is the conditional maximum likelihood estimate for AR(1)?
+
+------------------------------------------------------------------------
+
+The forecast equation for AR(1) is
+
+$$
+\hat X_{n+h|n} = \phi^h X_n
+$$
+
+For part a), to check that it is the best linear predictor, we just need to show that the gradient conditions hold, i.e. that
+
+$$
+\nabla_{\beta} \mathbb{E}\lbrace (X_{n+h} - \beta^T X_{n:1})^2\rbrace \big|_{\beta = (\phi^n,0,\ldots,0)} = 0.
+$$
+
+Now, the (negative) gradient at our desired solution is given by
+
+$$
+\begin{split}
+\mathbb{E}\lbrace(X_{n+h}-\phi^n X_n)X_{1:n}\rbrace
+\end{split}
+$$
+
+Since
+
+$$
+X_{n+h} = \sum_{j=0}^{h-1}\phi^jW_{n+h-j} + \phi^h X_n.
+$$
+
+Plugging this into the above expression and cancelling $\phi^h X_n$, we see that all coordinates in the gradient are of the form
+
+$$
+\mathbb{E}\left\lbrace \sum_{j=0}^{h-1}\phi^jW_{n+h-j}X_i\right\rbrace
+$$
+
+for some $1 \leq i \leq n$. By assumption of causality, the white noise terms with index larger than $n$ are independent of $X_1,\ldots,X_n$, so this expectation is equal to 0.
+
+The estimator defined in the notes was $\hat\phi = \hat\rho(1)=\hat\gamma(1)/\hat\gamma(0)$. This is exactly equal to $\Gamma_1^{-1}\gamma(1)$.
+
+To get the conditional maximum likelihood, we write the negative log conditional likelihood as
+
+$$
+-\log p_{\phi,\sigma^2,\mu}(x_2,x_3,\ldots,x_n|x_1) = \frac{n}{2}\log(2\pi \sigma^2) + \sum_{j=2}^n \frac{((x_j-\mu) - \phi (x_{j-1}-\mu))^2}{2\sigma^2}
+$$
+
+Rerranging the sum of squares term gives
+
+$$
+\sum_{j=2}^n (x_j - \phi x_{j-1} - (1-\phi)\mu)^2.
+$$
+
+Differentiating this with respect to $\mu$, we get
+
+$$
+-\sum_{j=2}^\infty (x_j - \phi x_{j-1} - (1-\phi)\mu)(1-\phi).
+$$
+
+Setting to be equal to $0$, and using the MLE value for $\phi$, $\phi = \hat\phi$, we get
+
+$$
+\hat\mu = \frac{\bar x_{2:n} - \hat\phi\bar x_{1:n-1}}{1-\hat\phi}.
+$$
+
+Next, differentiating with respect to $\phi$, we get
+
+$$
+\sum_{j=2}^n (x_j - \bar x_{2:n}) - \phi (x_{j-1} -\bar x_{1:n-1}))(x_{j-1} - \bar x_{1:n-1}).
+$$
+
+Setting this to be equal to 0 gives
+
+$$
+\hat\phi = \frac{\sum_{j=2}^n (x_j - \bar x_{2:n})(x_{j-1} - \bar x_{1:n-1})}{\sum_{j=2}^n (x_j - \bar x_{2:n})^2}
+$$
+
+------------------------------------------------------------------------
+
+## 3. Limiting forecast distribution
+
+What does the forecast distribution for AR(p) models converge to as $n \to \infty$?
+
+------------------------------------------------------------------------
+
+The point forecast is of the form
+
+$$
+\hat x_{n+h|n} = \mu + \gamma_{h:n+h-1}^T\Gamma_n^{-1}(x_{n:1} - \mu).
+$$
+
+We know that the ACVF values $\gamma(k) \to 0$ as $k \to \infty$. Hence, as a function of $h$, the second term converges to 0.
+
+The forecast variance is of the form
+
+$$
+v_{n+h|n} = \gamma(0) - \gamma_{h:n+h-1}^T\Gamma_n^{-1}\gamma_{h:n+h-1}.
+$$
+
+Using the same logic, the second term converges to 0.
+
+In summary, the forecast converges to the marginal distribution $N(\mu, \gamma(0))$.
+
+------------------------------------------------------------------------
+
+## 4. Difference between estimators
+
+a.  For AR(1), compute the difference between the mean estimators from the method of moments and conditional least squares approaches.
+b.  How does the difference change as $n \to \infty$?
+
+------------------------------------------------------------------------
+
+We first write the (conditional) MLE in more suggestive notation: $$
+\begin{split}
+\hat\mu_{MLE} & = \frac{\bar x_{2:n} - \hat\phi\bar x_{1:n-1}}{1-\hat\phi} \\
+& = \frac{\frac{1}{n-1}\sum_{t=2}^n x_t - \frac{\hat\phi}{n-1}\sum_{t=1}^{n-1}x_t}{1-\hat\phi} \\
+& = \sum_{t=1}^{n} a_t x_t,
+\end{split}
+$$
+
+where $$
+a_t = \begin{cases}
+-\frac{\hat\phi}{1-\hat\phi}\frac{1}{n-1} & t = 1 \\
+\frac{1}{n-1} & 2 \leq t \leq n-1 \\
+\frac{1}{1-\hat\phi}\frac{1}{n-1} & t = n.
+\end{cases}
+$$
+
+The method of moments estimator is just the sample mean
+
+$$
+\hat\mu_{YW} = \bar x_{1:n}.
+$$Taking the difference between the two estimators then gives
+
+$$
+\begin{split}
+\left| \hat\mu_{MLE} - \hat\mu_{YW}\right| & = \left| \sum_{t=1}^n (a_t - 1/n)x_t\right| \\
+& \leq \sum_{t=1}^n |a_t - 1/n| |x_t|.
+\end{split}
+$$
+
+We have
+
+$$
+|a_t - 1/n| \leq \begin{cases}
+\frac{|\hat\phi|}{(1-\hat\phi)(n-1)} + \frac{1}{n} & t = 1 \\
+\frac{1}{n(n-1)} & 2 \leq t \leq n-1 \\
+\frac{1}{1-\hat\phi}\frac{1}{n-1} + \frac{1}{n} & t = n.
+\end{cases}
+$$
+
+Plugging this into the above expression, we get
+
+$$
+\begin{split}
+\left| \hat\mu_{MLE} - \hat\mu_{YW}\right| & \leq \sum_{t=2}^{n-1} \frac{1}{n(n-1)} |x_t| + O(1/n)\cdot|x_1| + O(1/n)\cdot |x_n| \\
+& = O(1/n) \cdot \max_{1 \leq t \leq n} |x_t|
+\end{split}
+$$
+
+------------------------------------------------------------------------
+
+## 5. Nonlinear autoregressive models
+
+Fit a nonlinear AR model on the `globtemp` dataset. Compute its sum of squared residuals and compare it to that of a linear AR model.
+
+------------------------------------------------------------------------
+
+```{r}
+library(caret)
+globtemp <- read_rds("../_data/cleaned/globtemp.rds")
+
+# Create a dataset with columns containing lagged values
+trainset <- globtemp |>
+  as_tsibble() |>
+  rename(X = value) |>
+  mutate(lag1 = lag(X),
+         lag2 = lag(lag1),
+         lag3 = lag(lag2),
+         lag4 = lag(lag3)) |> 
+  filter_index("1884" ~ .)
+
+# Fit KNN model
+knn_fit <- train(X ~ lag1 + lag2 + lag3 + lag4, data = trainset, method = "knn")
+
+# Compute training set error
+mean(predict(knn_fit, new_data = trainset) - trainset$X) ** 2
+```
+
+```{r}
+# Compute training error for AR model
+ar_resids <- trainset |> 
+  model(AR(X)) |>
+  residuals() |>
+  pull(.resid)
+
+mean(ar_resids ** 2, na.rm = TRUE)
+```
+
+Training error for k-NN model is smaller.
+
+------------------------------------------------------------------------
