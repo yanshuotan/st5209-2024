@@ -43,10 +43,10 @@ $$ which does not depend on $t$. As such, $(X_t)$ is weakly stationary.
 
 On the other hand, depending on the choice of $U_1, U_2$, it may not be strongly stationary. For instance, let $U_1$ and $U_2$ have the distribution given by $$
 \mathbb{P}\lbrace U = 1\rbrace = \mathbb{P}\lbrace U = -1 \rbrace = 1/2.
-$$ This is known as the Rademacher distribution. Suppose also that $\omega = 1/4$. We then have $$
-X_4 = U_1\sin(2\pi) + U_2\cos(2\pi) = U_2. 
+$$ This is known as the Rademacher distribution. Suppose also that $\omega = 1/8$. We then have $$
+X_8 = U_1\sin(2\pi) + U_2\cos(2\pi) = U_2. 
 $$ On the other hand, $$
-X_1 = U_1\sin(\pi/2) + U_2\cos(\pi/2) = U_1/\sqrt{2} + U_2/\sqrt{2}. 
+X_1 = U_1\sin(\pi/4) + U_2\cos(\pi/4) = U_1/\sqrt{2} + U_2/\sqrt{2}. 
 $$ As such, we have $$
 \mathbb{P}\lbrace X_1 = \sqrt{2}\rbrace = \mathbb{P}\lbrace X_1 = -\sqrt{2}\rbrace = 1/4
 $$ $$
