@@ -30,7 +30,7 @@ library(fpp3)
 
 ## 1. Modeling with ARIMA (Q9.7 in Hyndman & Athanasopoulos)
 
-Consider `aus_airpassengers`, the total number of passengers (in millions) from Australian air carriers for the period 1970-2011.
+Consider `aus_airpassengers`, the total number of passengers (in millions) from Australian air carriers for the period 1970-2016.
 
 a.  Use `ARIMA()` to find an appropriate ARIMA model. What model was selected. Check that the residuals look like white noise. Plot forecasts for the next 10 periods.
 
