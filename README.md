@@ -62,7 +62,7 @@ Students are expected to have viewed and understood the lecture video before com
 - The midterm exam will be take home and open book. It will be released at noon on 8 March 2024 (Friday) and due at noon on 15 March 2024 (Friday). 
 
 ## Final Exam
-- The final exam will take place on 30 April 2024, 5-7pm. It will be closed book, but you are allowed one doubled-sided A4-sized help sheet.
+- The final exam will take place on 30 April 2024, 5-7pm at MPSH 6. It will be closed book, but you are allowed one doubled-sided A4-sized help sheet.
 
 ## Prerequisites
 - Basic knowledge of statistics, probability, and linear algebra
